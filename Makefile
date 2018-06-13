@@ -14,8 +14,11 @@ obj = promolden.o
 libcommon:
 	cd common/ && FC="$(FCOMPL)" FFLAGS="$(FFLAGC)" $(MAKE)
 
-promolden: libcommon $(obj)
-	$(FCOMPL) $(LDFLAG) -o $(exe) $(obj) common/libcommon.a
+libwfn:
+	cd wfn/ && FC="$(FCOMPL)" FFLAGS="$(FFLAGC)" $(MAKE)
+
+promolden: libcommon libwfn $(obj)
+	$(FCOMPL) $(LDFLAG) -o $(exe) $(obj) common/libcommon.a wfn/libwfn.a
 
 clean:
 	cd common && make clean
