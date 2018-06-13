@@ -5,7 +5,10 @@ include ../make.inc
 obj = libcommon.a
 all : $(obj)
 
-.SUFFIXES: .o .f90
+.SUFFIXES: .o .f90 .f
+
+%.o: %.f
+	$(FCOMPL) -c $(FFLAGC) -O2 $(FDEBUG) -o $@ $<
 
 %.o: %.f90
 	$(FCOMPL) -c $(FFLAGC) -O2 $(FDEBUG) -o $@ $<
@@ -16,7 +19,7 @@ all : $(obj)
 %.mod: %.o
 	@if [ ! -f $@ ]; then rm $< ; $(MAKE) $< ; fi
 
-OBJECTS = mod_prec.o mod_io.o mod_parallel.o mod_param.o 
+OBJECTS = mod_prec.o mod_io.o mod_parallel.o mod_param.o lebgrid.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)
