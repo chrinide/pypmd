@@ -19,7 +19,8 @@ all : $(obj)
 %.mod: %.o
 	@if [ ! -f $@ ]; then rm $< ; $(MAKE) $< ; fi
 
-OBJECTS = mod_prec.o mod_io.o mod_parallel.o mod_param.o lebgrid.o
+OBJECTS = mod_prec.o mod_io.o mod_parallel.o mod_memory.o \
+					mod_param.o mod_futils.o lebgrid.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)
@@ -28,5 +29,5 @@ $(obj): $(OBJECTS)
 	$(AR) $@ $(OBJECTS)
 	$(RANLIB) $@
 
-mod_param.o : mod_prec.mod
+mod_param.o mod_memory.o mod_futils.o : mod_prec.mod
 lebgrid.o: mod_prec.mod
