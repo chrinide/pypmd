@@ -20,7 +20,7 @@ all : $(obj)
 	@if [ ! -f $@ ]; then rm $< ; $(MAKE) $< ; fi
 
 OBJECTS = mod_prec.o mod_io.o mod_parallel.o mod_memory.o \
-					mod_param.o mod_futils.o quadratures.o lebgrid.o
+					mod_param.o mod_futils.o mod_linalg.o quadratures.o lebgrid.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)

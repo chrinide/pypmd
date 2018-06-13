@@ -4,8 +4,6 @@ module mod_wfn
   implicit none
   public
   
-  logical :: cciqa
-
   integer(kind=ip), parameter :: mgrp = 500_ip
   integer(kind=ip), parameter :: ngtoh = 21_ip
   integer(kind=ip), parameter :: maxtype = 56_ip
@@ -38,6 +36,7 @@ module mod_wfn
   integer(kind=ip), allocatable, dimension(:) :: ityp
   integer(kind=ip), allocatable, dimension(:,:):: iden
   integer(kind=ip), allocatable, dimension(:) :: nden
+
   integer(kind=ip) :: nvirtual, noccupied
   integer(kind=ip), allocatable, dimension(:) :: occupied
   integer(kind=ip), allocatable, dimension(:) :: virtual
@@ -63,7 +62,6 @@ contains
 
     epsocc = 1d-6
     cuttz = 1d-14
-    cciqa = .false.
 
 !...p's
     nlm(2,1)=1      !px
