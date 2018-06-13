@@ -3,8 +3,8 @@
 include make.inc
 
 all: promolden
-obj: promolden
-files = promolden.o
+exe = promolden
+obj = promolden.o
 
 .SUFFIXES: .o .f90
 
@@ -14,11 +14,11 @@ files = promolden.o
 libcommon:
 	cd common/ && FC="$(FCOMPL)" FFLAGS="$(FFLAGC)" $(MAKE)
 
-promolden: libcommon $(files)
-	$(FCOMPL) $(LDFLAG) -o promolden $(files) common/libcommon.a
+promolden: libcommon $(obj)
+	$(FCOMPL) $(LDFLAG) -o $(exe) $(obj) common/libcommon.a
 
 clean:
 	cd common && make clean
-	@rm -f $(files) *.mod $(obj)
+	@rm -f $(obj) *.mod $(exe)
 
 .PHONY: all promolden libcommon clean

@@ -28,3 +28,5 @@ $(obj): $(OBJECTS)
 	$(AR) $@ $(OBJECTS)
 	$(RANLIB) $@
 
+mod_param.o : mod_prec.mod
+lebgrid.o: mod_prec.mod
