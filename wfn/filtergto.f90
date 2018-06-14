@@ -24,6 +24,7 @@ subroutine filtergto ()
   end if
 
   ! Maximum distance at which it is necessary to compute a shell.
+  if (verbose) write (uout,223) rmaxatom
   if (verbose) write (uout,222) cuttz
   do ic = 1,ncent
     if (wrout.and.verbose) write (uout,210) ic
@@ -85,6 +86,7 @@ subroutine filtergto ()
   end do
 
  222  format (1x,'# CUTOFF for GTOs, eps = ',e17.10)
+ 223  format (1x,'# RMAXATOM for Shells = ',e17.10)
  300  format (' # ',i0,' shells contribute to the basin of center ',i0, &
        /,' # [ shell(atom) means shell number "shell" of atom "atom" ]')
  301  format (1000(1x,8(I6,'(',I4,')'),/))

@@ -4,12 +4,10 @@ subroutine infowfn()
   use mod_prec, only: ip
   use mod_io, only: string, mline
   use mod_wfn, only: ncent, charge, atnam, xyz, nvirtual, noccupied, &
-                     occupied, epsocc, rmaxatom
-  use mod_surf, only: rmaxsurf, epsiscp, epsilon, neqsurf, insurf, &
-                      ntrial, rprimer, nangleb, steeper
+                     occupied, epsocc
   implicit none
 
-  integer(kind=ip) :: i, ii
+  integer(kind=ip) :: i
 
   write (uout,'(1x,a,1x,i0)') string('# Number of centers :'), ncent
   atnam = adjustl(atnam)
@@ -18,10 +16,7 @@ subroutine infowfn()
   end do
   write (uout,'(1x,a,1x,e13.6)') string('# Occupied eps ='), epsocc
   write (uout,'(1x,a,1x,i0)') string('# Number of occupied orbitals ='), noccupied
-  if (largwr) then
-    write (uout,*) string('#'), occupied(:)
-  end if
+  write (uout,*) string('#'), occupied(:)
   write (uout,'(1x,a,1x,i0)') string('# Number of virtual orbitals ='), nvirtual
-  write (uout,'(1x,a)') string('# Rmaxatom', rmaxatom) 
 
 end subroutine infowfn
