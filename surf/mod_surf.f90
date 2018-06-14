@@ -1,152 +1,145 @@
 module mod_surf
 
+  use mod_prec, only: rp, ip
   implicit none
+  private
+
+  integer(kind=ip), parameter, public :: minter = 10 
+  integer(kind=ip), parameter, public :: maxtrial = 13
+  ! The MAXSTART parameter has to do with the RSEARCH order, 
+  ! RSEARCH nsearch nrstart, (rstart(i),i=1,nrstart)
+  ! This order can be used when one wants to avoid using the
+  ! default starting values of the radial coordinate in
+  ! the initial search of interatomic surfaces. If nsearch is 0
+  ! the starting values (rstart(i),i=1,nrstart) are used for all
+  ! the atoms. If nsearch is different from 0, the rstart(i)
+  ! (i=1,nrstart) values are used only for the atom 'nsearch'
+  ! and all its symmetry equivalent atoms.
+  integer(kind=ip), parameter, public :: maxstart = 40
+
+  !integer(kind=ip), public :: inuc
+  !real(kind=rp), public :: xnuc(3)
+  real(kind=rp), allocatable, dimension(:,:), public :: xyzrho
+  real(kind=rp), allocatable, dimension(:), public :: rmaxsurf
+  integer(kind=ip), allocatable, dimension(:,:), public :: nangleb
+  integer(kind=ip), public :: neqsurf
+  integer(kind=ip), allocatable, dimension(:), public :: insurf
+  real(kind=rp), allocatable, dimension(:,:), public :: rstart
+  integer(kind=ip), allocatable, dimension(:), public :: nrsearch
+  logical, allocatable, dimension(:), public :: lstart
+  real(kind=rp), allocatable, dimension(:,:), public :: rlimsurf
+  integer(kind=ip), allocatable, dimension(:), public :: nlimsurf
+
+  ! options
+  ! Precision in interatomic surfaces. 
+  real(kind=rp), public :: rmaxsurf
+  ! Precision in interatomic surfaces. 
+  real(kind=rp), public :: epsilon
+  ! If a non nuclear maximum is found whose distance to any nucleus 
+  ! is larger than EPSISCP, promolden STOPS. This control of non nuclear
+  ! maxima is performed in the 'iscp.f' routine. When Hydrogen atoms
+  ! are involved it is very convenient to change the default value
+  ! for EPSISCP (0.08) to a smaller value by using the 'EPSISCP value'
+  ! order in the input file.
+  real(kind=rp), public :: epsiscp
+  ! NTRIAL  = number of sub-intervals in the search of the surface.
+  ! RPRIMER = First point in the in the search of the surface.
+  ! GEOFAC  = ((rmaxsurf-0.1d0)/rprimer)**(1d0/(ntrial-1))
+  !           (RMAXSURF is defined in passed in integ.inc)
+  integer(kind=ip), public :: ntrial
+  real(kind=rp), public :: rprimer
+  real(kind=rp), public :: geofac
+  logical, public :: rotgrid
+  real(kind=rp), public :: angx, angy, angz
+  logical, public :: sphere
+  integer(kind=ip), public :: steeper
+
+  public :: init_surf
+  public :: allocate_space_for_surface, deallocate_space_for_surface
+  public :: allocate_space_for_integ, deallocate_space_for_integ
 
 contains
 
-  subroutine read_surf(verbose, debug)
-  
-  ! Read the rest of input file
-  call flush_unit (uout)
-  write (uout,'(1x,a)') string('# +++ Begin to read surf block')
-  do while (getline(uin,line))
-    lp = 1
-    word = lgetword(line,lp)
-    subline = line(lp:)
+  subroutine init_surf ()
 
-    if (equal(word,'#')) then
-      continue
+    implicit none
 
-    ! Surf options
-    else if (equal(word,'steeper')) then
-      ok = isinteger(steeper, line, lp)
-      ok = ok .and. steeper.ne.0_ip
-      if (.not.ok) call ferror('dosurf', 'wrong steeper line', faterr) 
-      steeper = abs(steeper)
-      if (steeper.gt.3) then
-        call ferror('dosurf', 'wrong steeper value', faterr)  
-      end if
+    sphere = .false.
+    steeper = 1_ip
+    rotgrid = .false.
+    ntrial = 11_ip
+    rprimer = 0.4_rp
+    inuc = 0_ip
+    epsilon = 1d-5 
+    epsiscp = 0.08_rp
+    angx = 0.0_rp
+    angy = 0.0_rp
+    angz = 0.0_rp
 
-    else if (equal(word,'epsiscp')) then
-      ok = isreal(epsiscp, line, lp)
-      ok = ok .and. epsiscp.ne.0.0_rp
-      if (.not.ok) call ferror('dosurf', 'wrong epsiscp line', faterr) 
-      epsiscp = abs(epsiscp)
-      write (uout,'(1x,a,1x,e13.6)') string('# *** Variable epsiscp changed to :'), epsiscp
+  end subroutine
+                                                                        
+  subroutine allocate_space_for_integ (ncent)
 
-    else if (equal(word,'epsilon')) then
-      ok = isreal(epsilon, line, lp)
-      ok = ok .and. epsilon.ne.0.0_rp
-      if (.not.ok) call ferror('dosurf', 'wrong epsilon line', faterr) 
-      epsilon = abs(epsilon)
-      write (uout,'(1x,a,1x,e13.6)') string('# *** Variable epsilon changed to :'), epsilon
+    use mod_memory, only: alloc
+    implicit none
 
-    else if (equal(word,'agrid')) then
-      ok = isinteger(iqudt, line, lp)
-      ok = ok .and. isinteger(ntheta, line, lp)
-      ok = ok .and. isinteger(nphi, line, lp)
-      ok = ok .and. ntheta.ne.0_ip .and. nphi.ne.0_ip .and. iqudt.ne.0
-      if (.not.ok) call ferror('dosurf', 'wrong agrid line', faterr) 
-      iqudt = abs(iqudt)
-      ntheta = abs(ntheta)
-      nphi = abs(nphi)
-      nangleb(:,1) = 0
-      nangleb(:,2) = ntheta
-      nangleb(:,3) = nphi 
-      nangleb(:,4) = iqudt
-      write (uout,'(1x,a,3(1x,i0))') string('# *** Surface agrid (iqudt,ntheta,nphi) :'), iqudt, ntheta, nphi
+    integer(kind=ip) :: i
+    integer(kind=ip), intent(in) :: ncent
 
-    else if (equal(word,'lebedev')) then
-      ok = isinteger(npang, line, lp)
-      ok = ok .and. npang.ne.0_ip
-      if (.not.ok) call ferror('dosurf', 'wrong lebedev line', faterr) 
-      npang = abs(npang)
-      call good_lebedev (npang)
-      nangleb(:,1) = 1
-      nangleb(:,2) = npang
-      nangleb(:,3) = 0
-      nangleb(:,4) = 0
-      write (uout,'(1x,a,1x,i0)') string('# *** Surface lebedev changed to :'), npang
+    neqsurf = ncent
+    call alloc ('mod_surf', 'insurf', insurf, ncent)
+    forall (i=1:neqsurf) insurf(i) = i
+    call alloc ('mod_surf', 'xyzrho', xyzrho, ncent, 3)
+    call alloc ('mod_surf', 'nangleb', nangleb, ncent, 4)
+    nangleb(:,1) = 1
+    nangleb(:,2) = 434
+    nangleb(:,3) = 0
+    nangleb(:,4) = 0
+    call alloc ('mod_surf', 'rmaxsurf', rmaxsurf, ncent)
+    rmaxsurf = 10.0_rp
+    call alloc ('mod_surf', 'rstart', rstart, ncent, maxstart)
+    call alloc ('mod_surf', 'nrsearch', nrsearch, ncent)
+    ! By default no explicit values of the radial coordinate are given to 
+    ! the atoms in the initial search of their interatomic surfaces.
+    call alloc ('mod_surf', 'lstart', lstart, ncent)
+    lstart = .false.
 
-    else if (equal(word,'rmaxatom')) then
-      ok = isreal(rmax, line, lp)
-      ok = ok .and. rmax.ne.0.0_rp
-      if (.not.ok) call ferror('dosurf', 'wrong rmaxatom line', faterr) 
-      rmaxatom = abs(rmax)
-      write (uout,'(1x,a,1x,e13.6)') string('# *** Variable rmaxatom changed to :'), rmax
+  end subroutine allocate_space_for_integ
 
-    else if (equal(word,'rmaxsurf')) then
-      ok = isreal(rmax, line, lp)
-      ok = ok .and. rmax.ne.0.0_rp
-      if (.not.ok) call ferror('dosurf', 'wrong rmaxsurf line', faterr) 
-      rmaxsurf = abs(rmax)
-      write (uout,'(1x,a,1x,e13.6)') string('# *** Variable rmaxsurf changed to :'), rmax
+  subroutine deallocate_space_for_integ ()
 
-    else if (equal(word,'ntrial')) then
-      ok = isinteger(ntrial, line, lp)
-      ok = ok .and. ntrial.ne.0_ip
-      if (.not.ok) call ferror('dosurf', 'wrong ntrial line', faterr) 
-      ntrial = abs(ntrial)
-      if (mod(ntrial,2).eq.0) ntrial = ntrial + 1_ip
-      write (uout,'(1x,a,1x,i0)') string('# *** Variable ntrial changed to :'), ntrial
+    use mod_memory, only: free
+    implicit none
 
-    else if (equal(word,'rprimer')) then
-      ok = isreal(rprimer, line, lp)
-      if (.not.ok) call ferror('dosurf', 'wrong rprimer line', faterr) 
-      rprimer = abs(rprimer)
-      write (uout,'(1x,a,1x,e13.6)') string('# *** Variable rprimer changed to :'), rprimer
+    call free ('mod_surf', 'xyzrho', xyzrho)
+    call free ('mod_surf', 'rmaxsurf', rmaxsurf)
+    call free ('mod_surf', 'nangleb', nangleb)
+    call free ('mod_surf', 'rstart', rstart)
+    call free ('mod_surf', 'nrsearch', nrsearch)
+    call free ('mod_surf', 'lstart', lstart)
+    call free ('mod_surf', 'insurf', insurf)
 
-    else if (equal(word,'rsearch')) then
-      ok = isinteger(nsearch,line,lp)
-      ok = ok .and. isinteger(nrstart,line,lp)
-      ok = ok .and. nsearch.ne.0_ip
-      ok = ok .and. nrstart.ne.0_ip
-      if (ok) then
-        if (nrstart.gt.maxstart) then
-          call ferror('dosurf', 'nrstart.gt.maxstart in rsearch order', faterr)
-        end if
-        nrstart = abs(nrstart)
-        if (nsearch.gt.ncent) then
-          call ferror('dosurf', 'nsearch.gt.ncent in rsearch order', faterr)
-        end if
-        if (nsearch.ne.-1_ip) then
-          nsearch = abs(nsearch)
-          nrsearch(nsearch) = nrstart
-          lstart(nsearch) = .true.
-          icon = 0_ip
-          do while (icon.lt.nrstart)
-            if (.not.isreal(rini,line,lp)) then
-              call ferror('dosurf', 'bad format in rsearch order', faterr)
-            end if
-            icon = icon + 1_ip
-            rstart(nsearch,icon) = rini
-          end do
-        else
-          forall (ic=1:ncent) nrsearch(ic) = nrstart
-          forall (ic=1:ncent) lstart(ic) = .true.
-          icon = 0_ip
-          do while (icon.lt.nrstart)
-            if (.not.isreal(rini,line,lp)) then
-              call ferror('dosurf', 'bad format in rsearch order', faterr)
-            end if
-            icon = icon + 1_ip
-            forall (ic=1:ncent) rstart(ic,icon) = rini
-          end do
-        end if
-      end if
+  end subroutine deallocate_space_for_integ
 
-    else if (equal(word,'endsurface')) then
-      exit
+  subroutine allocate_space_for_surface (nangular,ncutsurf)
 
-    else if (equal(word,'end')) then
-      goto 1
+    use mod_memory, only: alloc
+    implicit none
+    integer(kind=ip), intent(in) :: nangular, ncutsurf
 
-    else
-      !nothing to easy common file
+    call alloc ('mod_surf', 'rlimsurf', rlimsurf, nangular, ncutsurf)
+    call alloc ('mod_surf', 'nlimsurf', nlimsurf, nangular)
 
-    end if
-  end do
-  write (uout,'(1x,a)') string('# +++ End of read input')
-  write (uout,'(1x,a)') string('#')
-  call flush_unit (uout)
+  end subroutine allocate_space_for_surface
 
+  subroutine deallocate_space_for_surface
+
+    use mod_memory, only: free
+    implicit none
+
+    call free ('mod_surf', 'rlimsurf', rlimsurf)
+    call free ('mod_surf', 'nlimsurf', nlimsurf)
+
+  end subroutine deallocate_space_for_surface
+
+end module mod_surf
