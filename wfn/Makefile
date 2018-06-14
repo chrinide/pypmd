@@ -19,7 +19,8 @@ all : $(obj)
 %.mod: %.o
 	@if [ ! -f $@ ]; then rm $< ; $(MAKE) $< ; fi
 
-OBJECTS = mod_wfn.o setupwfn.o rdwfn.o filtergto.o etijcalc.o gtogto.o
+OBJECTS = mod_wfn.o setupwfn.o rdwfn.o filtergto.o etijcalc.o \
+					gtogto.o optswfn.o init_wfn.o loadwfn.o end_wfn.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)

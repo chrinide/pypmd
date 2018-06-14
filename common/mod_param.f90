@@ -9,18 +9,8 @@ module mod_param
 
   ! some options
   character(len=132) :: scratch
-  logical :: largwr, debug
+  logical :: verbose, debug
 
-contains
-
-  subroutine init_param ()
-
-    implicit none
-
-    scratch = './'
-    largwr = .false.
-    debug = .false.
-
-  end subroutine init_param
+  logical :: isdata
 
 end module mod_param

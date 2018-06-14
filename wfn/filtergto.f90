@@ -2,9 +2,9 @@
 ! a shell from the value of the 'cuttz' variable
 subroutine filtergto ()
 
+  use iso_fortran_env, only: uout=>output_unit
   use mod_prec, only: rp, ip
-  use mod_io, only: uout
-  use mod_param, only: largwr
+  use mod_param, only: verbose
   use mod_wfn, only: ncent, numshells, cuttz, nlm, oexp, ityp, &
                      nden, rcutte, iden, rint, nshell, ishell, &
                      atcenter, nuexp, ngroup, nzexp, rmaxatom
@@ -24,9 +24,9 @@ subroutine filtergto ()
   end if
 
   ! Maximum distance at which it is necessary to compute a shell.
-  write (uout,222) cuttz
+  if (verbose) write (uout,222) cuttz
   do ic = 1,ncent
-    if (wrout.and.largwr) write (uout,210) ic
+    if (wrout.and.verbose) write (uout,210) ic
     do m = 1,ngroup(ic)
       i = nuexp(ic,m,1)
       lsum = nlm(ityp(i),1)+nlm(ityp(i),2)+nlm(ityp(i),3)
@@ -37,7 +37,7 @@ subroutine filtergto ()
         x1 = x1 + 0.1_rp
       end do
       rcutte(ic,m) = x1
-      if (wrout.and.largwr) then
+      if (wrout.and.verbose) then
         lbl = lb(lsum)
         write (uout,613) lbl,zz,x1,(nuexp(ic,m,k),k=1,nzexp(ic,m))
       end if
@@ -46,11 +46,11 @@ subroutine filtergto ()
 
   nden(1:ncent) = 0_ip
   nshell(1:ncent) = 0_ip
-  if (wrout) then
+  if (wrout.and.verbose) then
     write (uout,'(1x,a,i0)') '# Total number of shells = ',numshells
   end if
   do ic = 1,ncent
-    xmax = rmaxatom(ic)
+    xmax = rmaxatom
     do jc = 1,ncent
       dis = rint(ic,jc)
       okcen = .false.
@@ -71,7 +71,7 @@ subroutine filtergto ()
       end if
     end do
   end do
-  if (wrout.and.largwr) then
+  if (wrout.and.verbose) then
     do ic = 1,ncent
       write (uout,300) nshell(ic),ic
       write (uout,301) (ishell(ic,j),atcenter(ic,j),j=1,nshell(ic))

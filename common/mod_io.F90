@@ -29,7 +29,7 @@ module mod_io
   public :: ioinit
   public :: fopen_read
   public :: fopen_write
-  public :: fopen_append
+! public :: fopen_append
   public :: fopen_scratch
   public :: fclose
   public :: falloc
@@ -1044,32 +1044,32 @@ contains
   end function fopen_write
 
   !> Open a file for appending
-  function fopen_append(file,form,abspath0) result(lu)
-
-    character(len=*), intent(in) :: file
-    character(len=*), intent(in), optional :: form
-    logical, intent(in), optional :: abspath0
-    integer :: lu
-    
-    integer :: ios
-    character(len=:), allocatable :: ofile
-    logical :: abspath
-
-    abspath = .false.
-    ofile = trim(adjustl(filepath)) // dirsep // file
-    if (file(1:1) == dirsep) abspath = .true.
-    if (present(abspath0)) abspath = abspath0
-    if (abspath) ofile = file
-
-    lu = falloc()
-    if (present(form)) then
-       open(unit=lu,file=ofile,status='old',access='append',iostat=ios,form=form)
-    else
-       open(unit=lu,file=ofile,status='old',access='append',iostat=ios)
-    end if
-    if (ios /= 0) call ferror("fopen_append","error opening file: "//string(file),faterr)
-
-  end function fopen_append
+! function fopen_append(file,form,abspath0) result(lu)
+!
+!   character(len=*), intent(in) :: file
+!   character(len=*), intent(in), optional :: form
+!   logical, intent(in), optional :: abspath0
+!   integer :: lu
+!   
+!   integer :: ios
+!   character(len=:), allocatable :: ofile
+!   logical :: abspath
+!
+!   abspath = .false.
+!   ofile = trim(adjustl(filepath)) // dirsep // file
+!   if (file(1:1) == dirsep) abspath = .true.
+!   if (present(abspath0)) abspath = abspath0
+!   if (abspath) ofile = file
+!
+!   lu = falloc()
+!   if (present(form)) then
+!      open(unit=lu,file=ofile,status='old',access='append',iostat=ios,form=form)
+!   else
+!      open(unit=lu,file=ofile,status='old',access='append',iostat=ios)
+!   end if
+!   if (ios /= 0) call ferror("fopen_append","error opening file: "//string(file),faterr)
+!
+! end function fopen_append
 
   !> Open a file for writing
   function fopen_scratch(form) result(lu)

@@ -3,5 +3,9 @@
 *.a
 *.so
 *.txt
+*.out
+*.mol
+*.log
+*.pmdout
 promolden
 TODO

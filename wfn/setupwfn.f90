@@ -3,9 +3,10 @@
 ! In that case, we condensate all the coefficients in a single one.
 subroutine setupwfn ()
 
+  use iso_fortran_env, only: uout=>output_unit
   use mod_prec, only: rp, ip
   use mod_memory, only: alloc, free
-  use mod_io, only: ferror, faterr, uout
+  use mod_io, only: ferror, faterr
   use mod_wfn, only: nmo, nprims, ncent, coef, maxgrp, mgrp, numshells, &
                      icen, oexp, ityp, npc, nlm, nuexp, oexp, ngroup, &
                      icenat, nzexp, allocate_space_for_shells

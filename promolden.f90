@@ -1,13 +1,13 @@
 program promolden
 
   !$ use omp_lib
+  use iso_fortran_env, only: uout=>output_unit
   use mod_prec, only: rp, ip
   use mod_io, only: ferror, faterr, getdate, stdargs, equal, &
                     isinteger, isreal, isword, ioinit, getline,  &
-                    uin, uout, mline, string, flush_unit, &
+                    uin, mline, string, flush_unit, &
                     nwarns, ncomms, warning, lgetword
-  use mod_param, only: debug, largwr, init_param
-  use mod_parallel, only: init_parallel, nthreads, info_parallel, end_parallel
+  use mod_param, only: isdata
   implicit none
  
   character(len=:), allocatable :: optv !< command-line arguments 
@@ -19,8 +19,10 @@ program promolden
   character(len=mline) :: wdate  
   character(len=:), allocatable :: line, subline, word
 
+  character(len=mline) :: vchar
+  real(kind=rp) :: rval
+
   ! Begin program
-  call init_parallel ()
   call ioinit ()
   call stdargs (optv, fileroot)
 
@@ -33,20 +35,16 @@ program promolden
   write (uout,'(1x,a)') string('#  =====================================================')
   write (uout,'(1x,a)') string('#')
   write (uout,'(1x,a)') string('# Calculation starts at '//wdate)
-  call info_parallel (uout)
 
   call cpu_time (tiempo1)
   !$ tiempo1 = omp_get_wtime()
 
   call init_param ()
+  call init_wfn ()
+
   if (index(optv,"d") /= 0) then
-    debug = .true.
-    largwr = .true.
-    call ferror ('promolden', 'debug mode is enabled', warning)
-    write (uout,'(1x,a)') string('# WARNING: DEBUG MODE ENABLED !!')
-    write (uout,'(1x,a)') string('# Lot of info will be printed !!')
-    write (uout,'(1x,a)') string('# WARNING: DEBUG MODE ENABLED !!')
-    write (uout,*)
+    call optsparam('debug',.true.)
+    call optsparam('verbose',.true.)
   end if
   if (index(optv,"h") /= 0) then
     write (uout,'(1x,a)') string('# +++ Help not yet available')
@@ -64,23 +62,37 @@ program promolden
     if (equal(word,'#')) then
       continue
 
-    ! Parallel options
-    else if (equal(word,'nthreads')) then
-      ok = isinteger(nthreads, line, lp)
-      ok = ok .and. nthreads.ne.0
-      if (.not.ok) call ferror('promolden', 'wrong nthreads line', faterr) 
-      !$ nthreads = abs(nthreads)
-      !$ write (uout,'(1x,a,1x,i0)') string('# *** Number of threads changed to :'), nthreads
-      !$ call omp_set_num_threads(nthreads)
-
     ! Param options
     else if (equal(word,'verbose')) then
-      largwr = .true.
-      write (uout,'(1x,a)') string('# *** Verbose mode is enabled')
+      call optsparam(word,.true.)
 
+    ! WFN library
+    else if (equal(word,'cuttz')) then
+      ok = isreal(rval, line, lp)
+      if (.not.ok) call ferror('promolden', 'wrong cuttz line', faterr) 
+      call optswfn(word,rval)
+
+    else if (equal(word,'epsocc')) then
+      ok = isreal(rval, line, lp)
+      if (.not.ok) call ferror('promolden', 'wrong epsocc line', faterr) 
+      call optswfn(word,rval)
+
+    else if (equal(word,'rmaxatom')) then
+      ok = isreal(rval, line, lp)
+      if (.not.ok) call ferror('promolden', 'wrong rmaxatom line', faterr) 
+      call optswfn(word,rval)
+
+    else if (equal(word,'load')) then
+      ok = isword(vchar, line, lp)
+      if (.not.ok) call ferror('promolden', 'wrong load line', faterr) 
+      call loadwfn(vchar)
+      isdata = .true.
+
+    ! End of input
     else if (equal(word,'end')) then
       exit
 
+    ! Exit main driver
     else if (equal(word,'exit') .or. equal(word,'quit')) then
       goto 1
 
@@ -99,6 +111,7 @@ program promolden
   write (uout,'(1x,a,f16.6)') string('# Total elapsed time = '), tiempo2-tiempo1
   write (uout,'(" # Check : (",A," WARNINGS, ",A," COMMENTS)")') string(nwarns), string(ncomms)
   write (uout,'(1x,a)') string('# Calculation ends at '//wdate)
-  call end_parallel ()
+
+  call end_wfn()
 
 end program

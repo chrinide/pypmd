@@ -2,10 +2,10 @@ subroutine rdwfn (wfnfile)
 
   use mod_prec, only: rp, ip
   use mod_memory, only: alloc, free
-  use mod_io, only: ferror, faterr, uout, mline, udat, string, warning
+  use mod_io, only: ferror, faterr, mline, udat, string, warning
   use mod_linalg, only: jacobi
   use mod_wfn, only: maxtype, ncent, nmo, nprims, &
-                     occ, oexp, ityp, eorb, xyz, rint, &
+                     occ, oexp, ityp, eorb, xyz, rint, rdm, &
                      atnam, charge, icen, coef, c1et, epsocc, &
                      noccupied, occupied, nvirtual, occv, &
                      allocate_space_for_wfn, allocate_space_for_rho, &
@@ -85,6 +85,7 @@ subroutine rdwfn (wfnfile)
 
   ! RDM 
   if (label(1:3).eq.'RDM') then
+    rdm = .true.
     call allocate_space_for_rdm ()
     call alloc ('rdwfn', 'v1mata', v1mata , nmo, nmo)
     call alloc ('rdwfn', 'd1mata', d1mata , nmo)
@@ -102,9 +103,7 @@ subroutine rdwfn (wfnfile)
       end if
     end do
 123 close (57)
-
     ! Test the symmetric character of c1et().
-    write (uout,'(1x,a)') "# The 1-RDM will be symmetrized"
     do i = 2,nmo
       do j = 1,i-1
         cij = c1et(i,j)
