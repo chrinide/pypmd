@@ -1,6 +1,6 @@
    subroutine pointr1 (p,rho,grad,gradmod)
 !
-!...Computes the spatial density and gradient at point p().
+!..Computes the spatial density and gradient at point p().
 ! 
    use mod_prec, only: rp, ip
    use mod_wfn, only: ncent, nlm, xyz, ityp, rcutte, occv, occupied, &
@@ -46,7 +46,7 @@
 !
 !.......skip to compute this primitive if distance is too big.
 !
-       if (dis2.gt.rcutte(ic,m)*rcutte(ic,m)) goto 2
+!      if (dis2.gt.rcutte(ic,m)*rcutte(ic,m)) goto 2
        if (dis2.gt.rcutte(ic,m)) goto 2
        ori = -oexp(k)
        dp2 = ori + ori
