@@ -131,5 +131,6 @@
 !
    grad(:) = grad(:) + grad(:)
    gradmod = sqrt(grad(1)*grad(1)+grad(2)*grad(2)+grad(3)*grad(3))
+   !grad = grad/(gradmod+1e-16) !TODO:change by small machine number
 !
    end subroutine

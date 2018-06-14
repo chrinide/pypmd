@@ -84,7 +84,7 @@ def read_rdm1(file1, norb):
 if __name__ == '__main__':
 
     import data # Almacenas los tipos de primitivas
-    name = 'h2o.wfn'
+    name = 'n2_rhf.wfn'
 
     title, symbols, numbers, coords, icen, ityp, oexp, \
     mo_count, mo_occ, mo_energy, mo_coeff = load_wfn(name)
@@ -216,5 +216,10 @@ if __name__ == '__main__':
         hess[1,2] = hess[1,2] + hess[1,2]
         hess[2,1] = hess[1,2]
 
-        return rho, grad, hess, lap, king
+        return rho, grad, gradmod, hess, lap, king
 
+    point = numpy.zeros(3)
+    rho,grad,gradmod,hess,lap,king = density(point)
+    print rho, grad, gradmod
+    print hess, lap
+    print king

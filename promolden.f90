@@ -20,7 +20,7 @@ program promolden
   character(len=:), allocatable :: line, subline, word
 
   character(len=mline) :: vchar
-  real(kind=rp) :: rval
+  real(kind=rp) :: rval, rho, grad(3), gradmod, xpoint(3)
 
   ! Begin program
   call ioinit ()
@@ -87,6 +87,18 @@ program promolden
       if (.not.ok) call ferror('promolden', 'wrong load line', faterr) 
       call loadwfn(vchar)
       isdata = .true.
+
+    else if (equal(word,'point')) then
+      ok = isreal(xpoint(1), line, lp)
+      ok = ok .and. isreal(xpoint(2), line, lp)
+      ok = ok .and. isreal(xpoint(3), line, lp)
+      if (.not.ok) call ferror('promolden', 'wrong point line', faterr) 
+      if (isdata) then
+        call pointr1(xpoint,rho,grad,gradmod)
+        write (*,*) xpoint, rho, grad, gradmod
+      else
+        call ferror('promolden', 'data not loaded', faterr) 
+      end if
 
     ! End of input
     else if (equal(word,'end')) then

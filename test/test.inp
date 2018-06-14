@@ -5,3 +5,4 @@ wfn
   rmaxatom 20.0
 endwfn
 load n2_rhf.wfn
+point 0.0 0.0 0.0
