@@ -6,6 +6,7 @@
 *.out
 *.mol
 *.log
+*.pyc
 *.pmdout
 promolden
 TODO
