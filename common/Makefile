@@ -8,13 +8,13 @@ all : $(obj)
 .SUFFIXES: .o .f90 .f
 
 %.o: %.f
-	$(FCOMPL) -c $(FFLAGC) -O2 $(FDEBUG) -o $@ $<
+	$(FCOMPL) -c $(FFLAGC) $(OPT) $(FDEBUG) -o $@ $<
 
 %.o: %.f90
-	$(FCOMPL) -c $(FFLAGC) -O2 $(FDEBUG) -o $@ $<
+	$(FCOMPL) -c $(FFLAGC) $(OPT) $(FDEBUG) -o $@ $<
 
 %.o: %.F90
-	$(FCOMPL) -c $(FFLAGC) -O2 $(FDEBUG) -o $@ $<
+	$(FCOMPL) -c $(FFLAGC) $(OPT) $(FDEBUG) -o $@ $<
 
 %.mod: %.o
 	@if [ ! -f $@ ]; then rm $< ; $(MAKE) $< ; fi

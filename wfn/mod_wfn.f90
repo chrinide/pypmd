@@ -4,8 +4,6 @@ module mod_wfn
   implicit none
   public
 
-  logical :: rdm
-  
   integer(kind=ip), parameter :: mgrp = 500_ip
   integer(kind=ip), parameter :: ngtoh = 21_ip
   integer(kind=ip), parameter :: maxtype = 56_ip
@@ -49,12 +47,14 @@ module mod_wfn
 
   real(kind=rp), allocatable, dimension(:,:) :: c1et
 
+  logical :: rdm
   ! OPTIONS:
   ! Any gaussian primitive and gaussian derivative will be assumed
   ! to be zero if it is smaller than cuttz.
   real(kind=rp) :: cuttz
   real(kind=rp) :: epsocc
   real(kind=rp) :: rmaxatom
+  real(kind=rp) :: epsortho
   
 contains
 

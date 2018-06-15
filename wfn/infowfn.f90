@@ -4,7 +4,7 @@ subroutine infowfn()
   use mod_prec, only: ip
   use mod_io, only: string, mline
   use mod_wfn, only: ncent, charge, atnam, xyz, nvirtual, noccupied, &
-                     occupied, epsocc
+                     occupied, epsocc, epsortho
   implicit none
 
   integer(kind=ip) :: i
@@ -18,5 +18,6 @@ subroutine infowfn()
   write (uout,'(1x,a,1x,i0)') string('# Number of occupied orbitals ='), noccupied
   write (uout,*) string('#'), occupied(:)
   write (uout,'(1x,a,1x,i0)') string('# Number of virtual orbitals ='), nvirtual
+  write (uout,'(1x,a,1x,e13.6)') string('# epsortho = '), epsortho
 
 end subroutine infowfn

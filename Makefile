@@ -9,16 +9,16 @@ obj = promolden.o
 .SUFFIXES: .o .f90
 
 %.o: %.f90
-	$(FCOMPL) -Icommon -Iwfn -c $(FFLAGC) -O2 $(FDEBUG) -o $@ $<
+	$(FCOMPL) -Icommon -Iwfn -Isurf -c $(LDFLAG) $(FDEBUG) -o $@ $<
 
 libcommon:
-	cd common/ && FC="$(FCOMPL)" FFLAGS="$(FFLAGC)" $(MAKE)
+	cd common/ && $(MAKE)
 
 libwfn:
-	cd wfn/ && FC="$(FCOMPL)" FFLAGS="$(FFLAGC)" $(MAKE)
+	cd wfn/ && $(MAKE)
 
 libsurf:
-	cd surf/ && FC="$(FCOMPL)" FFLAGS="$(FFLAGC)" $(MAKE)
+	cd surf/ && $(MAKE)
 
 promolden: libcommon libwfn libsurf $(obj)
 	$(FCOMPL) $(LDFLAG) -o $(exe) $(obj) wfn/libwfn.a surf/libsurf.a \

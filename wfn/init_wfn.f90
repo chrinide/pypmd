@@ -1,10 +1,11 @@
 subroutine init_wfn()
                 
-  use mod_wfn, only: epsocc, cuttz, nlm, rmaxatom, rdm
+  use mod_wfn, only: epsocc, cuttz, nlm, rmaxatom, rdm, epsortho
   implicit none
 
   rdm = .false.
   epsocc = 1d-6
+  epsortho = 1d-5
   cuttz = 1d-14
   rmaxatom = 20d0
 

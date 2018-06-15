@@ -21,7 +21,7 @@ all : $(obj)
 
 OBJECTS = mod_wfn.o setupwfn.o rdwfn.o filtergto.o etijcalc.o \
 					gtogto.o optswfn.o init_wfn.o loadwfn.o end_wfn.o \
-					pointr1.o infowfn.o
+					pointr1.o infowfn.o isorthowfn.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)
