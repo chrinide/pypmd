@@ -5,4 +5,6 @@ The idea is to upload the code step by step, writting tests and carefully debugg
 
 For the last we are also working in a python/C version coupled to pyscf, pyaim `https://github.com/cuanto/pyaim`.
 
+Actual done work are stored by the moment in the dev branch
+
 All users interested in collaborations are well received
