@@ -18,7 +18,8 @@ libwfn:
 	cd wfn/ && FC="$(FCOMPL)" FFLAGS="$(FFLAGC)" $(MAKE)
 
 promolden: libcommon libwfn $(obj)
-	$(FCOMPL) $(LDFLAG) -o $(exe) $(obj) wfn/libwfn.a common/libcommon.a
+	$(FCOMPL) $(LDFLAG) -o $(exe) $(obj) wfn/libwfn.a surf/libsurf.a \
+  common/libcommon.a
 
 clean:
 	cd common && make clean

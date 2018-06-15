@@ -8,18 +8,20 @@ all : $(obj)
 .SUFFIXES: .o .f90 .f
 
 %.o: %.f
-	$(FCOMPL) -I../common  -c $(FFLAGC) -O2 $(FDEBUG) -o $@ $<
+	$(FCOMPL) -I../common -I../wfn -c $(FFLAGC) $(OPT) $(FDEBUG) -o $@ $<
 
 %.o: %.f90
-	$(FCOMPL) -I../common  -c $(FFLAGC) -O2 $(FDEBUG) -o $@ $<
+	$(FCOMPL) -I../common -I../wfn -c $(FFLAGC) $(OPT) $(FDEBUG) -o $@ $<
 
 %.o: %.F90
-	$(FCOMPL) -I../common -c $(FFLAGC) -O2 $(FDEBUG) -o $@ $<
+	$(FCOMPL) -I../common -I../wfn -c $(FFLAGC) $(OPT) $(FDEBUG) -o $@ $<
 
 %.mod: %.o
 	@if [ ! -f $@ ]; then rm $< ; $(MAKE) $< ; fi
 
-OBJECTS = weightheta.o
+OBJECTS = mod_surf.o init_surf.o findnuc.o gradrho.o \
+					weightheta.o iscp.o infosurf.o end_surf.o \
+					optssurf.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)

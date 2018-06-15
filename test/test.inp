@@ -6,3 +6,11 @@ wfn
 endwfn
 load n2_rhf.wfn
 point 0.0 0.0 0.0
+surf
+  steeper 1
+  ntrial 11
+  rprimer 0.4
+  epsilon 1d-5 
+  epsiscp 0.08
+  rmaxsurf 10.0
+endsurf

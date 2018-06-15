@@ -19,8 +19,19 @@ program promolden
   character(len=mline) :: wdate  
   character(len=:), allocatable :: line, subline, word
 
+  integer(kind=ip) :: ival
   character(len=mline) :: vchar
   real(kind=rp) :: rval, rho, grad(3), gradmod, xpoint(3)
+
+  interface
+    subroutine optssurf(var,rval,ival)
+      import rp, ip
+      implicit none
+      character(len=*), intent(in) :: var
+      real(kind=rp), optional :: rval
+      integer(kind=ip), optional :: ival
+    end subroutine
+  end interface
 
   ! Begin program
   call ioinit ()
@@ -41,7 +52,8 @@ program promolden
 
   call init_param ()
   call init_wfn ()
-
+  call init_surf ()
+  
   if (index(optv,"d") /= 0) then
     call optsparam('debug',.true.)
     call optsparam('verbose',.true.)
@@ -100,6 +112,53 @@ program promolden
         call ferror('promolden', 'data not loaded', faterr) 
       end if
 
+    ! Surf options
+    else if (equal(word,'steeper')) then
+      ok = isinteger(ival, line, lp)
+      ok = ok .and. ival.ne.0_ip
+      if (.not.ok) call ferror('promolden', 'wrong steeper line', faterr) 
+      if (ival.gt.3) then
+        call ferror('promolden', 'wrong steeper value', faterr)  
+      end if
+      ival = abs(ival)
+      call optssurf(word,ival=ival)
+
+    else if (equal(word,'epsiscp')) then
+      ok = isreal(rval, line, lp)
+      ok = ok .and. rval.ne.0.0_rp
+      if (.not.ok) call ferror('promolden', 'wrong epsiscp line', faterr) 
+      rval = abs(rval)
+      call optssurf(word,rval=rval)
+
+    else if (equal(word,'epsilon')) then
+      ok = isreal(rval, line, lp)
+      ok = ok .and. rval.ne.0.0_rp
+      if (.not.ok) call ferror('promolden', 'wrong epsilon line', faterr) 
+      rval = abs(rval)
+      call optssurf(word,rval=rval)
+
+    else if (equal(word,'rmaxsurf')) then
+      ok = isreal(rval, line, lp)
+      ok = ok .and. rval.ne.0.0_rp
+      if (.not.ok) call ferror('promolden', 'wrong rmaxsurf line', faterr) 
+      rval = abs(rval)
+      call optssurf(word,rval=rval)
+
+    else if (equal(word,'ntrial')) then
+      ok = isinteger(ival, line, lp)
+      ok = ok .and. ival.ne.0_ip
+      if (.not.ok) call ferror('promolden', 'wrong ntrial line', faterr) 
+      ival = abs(ival)
+      if (mod(ival,2).eq.0) ival = ival + 1_ip
+      call optssurf(word,ival=ival)
+
+    else if (equal(word,'rprimer')) then
+      ok = isreal(rval, line, lp)
+      ok = ok .and. rval.ne.0.0_rp
+      if (.not.ok) call ferror('promolden', 'wrong rprimer line', faterr) 
+      rval = abs(rval)
+      call optssurf(word,rval=rval)
+
     ! End of input
     else if (equal(word,'end')) then
       exit
@@ -124,6 +183,7 @@ program promolden
   write (uout,'(" # Check : (",A," WARNINGS, ",A," COMMENTS)")') string(nwarns), string(ncomms)
   write (uout,'(1x,a)') string('# Calculation ends at '//wdate)
 
-  call end_wfn()
+  call end_wfn ()
+  call end_surf ()
 
 end program
