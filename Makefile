@@ -17,12 +17,17 @@ libcommon:
 libwfn:
 	cd wfn/ && FC="$(FCOMPL)" FFLAGS="$(FFLAGC)" $(MAKE)
 
-promolden: libcommon libwfn $(obj)
+libsurf:
+	cd surf/ && FC="$(FCOMPL)" FFLAGS="$(FFLAGC)" $(MAKE)
+
+promolden: libcommon libwfn libsurf $(obj)
 	$(FCOMPL) $(LDFLAG) -o $(exe) $(obj) wfn/libwfn.a surf/libsurf.a \
   common/libcommon.a
 
 clean:
 	cd common && make clean
+	cd surf && make clean
+	cd wfn && make clean
 	@rm -f $(obj) *.mod $(exe)
 
 .PHONY: all promolden libcommon clean
