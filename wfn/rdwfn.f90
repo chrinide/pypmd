@@ -41,6 +41,7 @@ subroutine rdwfn (wfnfile)
   end do
 
   ! Evaluate internuclear distances
+  ! TODO:mv out
   do i = 1,ncent
     x1 = xyz(i,1)
     y1 = xyz(i,2)

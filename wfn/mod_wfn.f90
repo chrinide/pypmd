@@ -12,6 +12,7 @@ module mod_wfn
   integer(kind=ip) :: nlm(maxtype,3)
 
   integer(kind=ip) :: nprims
+  integer(kind=ip) :: ncore
   integer(kind=ip) :: nmo
   integer(kind=ip) :: ncent
   integer(kind=ip) :: maxgrp
