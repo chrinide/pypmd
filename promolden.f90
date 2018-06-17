@@ -181,14 +181,14 @@ program promolden
   write (uout,'(1x,a)') string('#')
   call flush_unit (uout)
 
+  call end_wfn ()
+  call end_surf ()
+
 1 call cpu_time (tiempo2)
   !$ tiempo2 = omp_get_wtime()
   call getdate (wdate)
   write (uout,'(1x,a,f16.6)') string('# Total elapsed time = '), tiempo2-tiempo1
   write (uout,'(" # Check : (",A," WARNINGS, ",A," COMMENTS)")') string(nwarns), string(ncomms)
   write (uout,'(1x,a)') string('# Calculation ends at '//wdate)
-
-  call end_wfn ()
-  call end_surf ()
 
 end program
