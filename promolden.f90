@@ -78,7 +78,7 @@ program promolden
     else if (equal(word,'verbose')) then
       call optsparam(word,.true.)
 
-    ! WFN library
+    ! WFN 
     else if (equal(word,'cuttz')) then
       ok = isreal(rval, line, lp)
       if (.not.ok) call ferror('promolden', 'wrong cuttz line', faterr) 
@@ -87,6 +87,11 @@ program promolden
     else if (equal(word,'epsocc')) then
       ok = isreal(rval, line, lp)
       if (.not.ok) call ferror('promolden', 'wrong epsocc line', faterr) 
+      call optswfn(word,rval)
+
+    else if (equal(word,'epsortho')) then
+      ok = isreal(rval, line, lp)
+      if (.not.ok) call ferror('promolden', 'wrong epsortho line', faterr) 
       call optswfn(word,rval)
 
     else if (equal(word,'rmaxatom')) then

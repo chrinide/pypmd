@@ -4,7 +4,7 @@
 ! 
    use mod_prec, only: rp, ip
    use mod_wfn, only: ncent, nlm, xyz, ityp, rcutte, occv, occupied, &
-                      oexp, ngroup, nuexp, nzexp, coef, noccupied 
+                      oexp, ngroup, nuexp, nzexp, coefnat, noccupied 
    implicit none
 !
    real(kind=rp), intent(in) :: p(3)
@@ -111,7 +111,7 @@
 !
          do j = 1,noccupied
            idx = occupied(j) 
-           cfj = coef(idx,i)
+           cfj = coefnat(idx,i)
            gun(idx) = gun(idx) + cfj*f123
            gun1(idx,1) = gun1(idx,1) + cfj*fa
            gun1(idx,2) = gun1(idx,2) + cfj*fb

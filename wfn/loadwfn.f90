@@ -8,5 +8,6 @@ subroutine loadwfn(filename)
   call rdwfn (filename)
   if (verbose) call infowfn ()
   call filtergto ()
+  call isorthowfn ()
 
 end subroutine loadwfn

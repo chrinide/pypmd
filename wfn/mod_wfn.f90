@@ -17,7 +17,8 @@ module mod_wfn
   integer(kind=ip) :: maxgrp
   integer(kind=ip) :: numshells
 
-  real(kind=rp), allocatable, dimension(:,:) :: coef
+  real(kind=rp), allocatable, dimension(:,:) :: coefcan
+  real(kind=rp), allocatable, dimension(:,:) :: coefnat
   integer(kind=ip), allocatable, dimension(:) :: npc
   integer(kind=ip), allocatable, dimension(:) :: ngroup
   integer(kind=ip), allocatable, dimension(:,:) :: icenat
@@ -66,7 +67,8 @@ contains
 
     integer(kind=ip) :: ier
 
-    call alloc ('mod_wfn', 'coef', coef, nmo+nmo, nprims)
+    call alloc ('mod_wfn', 'coefcan', coefcan, nmo, nprims)
+    call alloc ('mod_wfn', 'coefnat', coefnat, nmo, nprims)
     call alloc ('mod_wfn', 'npc', npc, ncent)
     call alloc ('mod_wfn', 'ngroup', ngroup, ncent)
     call alloc ('mod_wfn', 'icenat', icenat, nprims, ncent)
@@ -100,7 +102,8 @@ contains
 
     integer(kind=ip) :: ier
 
-    call free ('mod_wfn', 'coef', coef)
+    call free ('mod_wfn', 'coefcan', coefcan)
+    call free ('mod_wfn', 'coefnat', coefnat)
     call free ('mod_wfn', 'npc', npc)
     call free ('mod_wfn', 'ngroup', ngroup)
     call free ('mod_wfn', 'icenat', icenat)

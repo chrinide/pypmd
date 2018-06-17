@@ -1,0 +1,7 @@
+n2_rhf.wfn
+threads 12
+surf 1
+epsiscp 0.220
+rmaxsurf 10.0
+lebedev 5810
+epsilon 1d-4

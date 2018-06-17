@@ -2,6 +2,7 @@ verbose
 wfn
   cuttz 1e-16
   epsocc 1e-16
+  epsortho 1e-5
   rmaxatom 20.0
 endwfn
 load n2_rhf.wfn

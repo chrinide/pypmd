@@ -6,8 +6,8 @@ subroutine rdwfn (wfnfile)
   use mod_linalg, only: jacobi
   use mod_wfn, only: maxtype, ncent, nmo, nprims, &
                      occ, oexp, ityp, eorb, xyz, rint, rdm, &
-                     atnam, charge, icen, coef, c1et, epsocc, &
-                     noccupied, occupied, nvirtual, occv, &
+                     atnam, charge, icen, coefcan, c1et, epsocc, &
+                     noccupied, occupied, nvirtual, occv, coefnat, &
                      allocate_space_for_wfn, allocate_space_for_rho, &
                      allocate_space_for_rdm, deallocate_space_for_rdm
   implicit none
@@ -69,8 +69,7 @@ subroutine rdwfn (wfnfile)
     if (occ(i).lt.0.0_rp) then
       call ferror('rdwfn', 'nmo with negative occupation : '//string(i), warning)
     end if  
-    read (iwfn,107) (coef(i,j),j=1,nprims)
-    coef(i+nmo,1:nprims) = coef(i,1:nprims)
+    read (iwfn,107) (coefnat(i,j),j=1,nprims)
   end do
   read (iwfn,108) check
   if (check .ne. 'END DATA') then
@@ -79,6 +78,7 @@ subroutine rdwfn (wfnfile)
 
   ! Reduce and set info
   call setupwfn ()
+  coefcan = coefnat
 
   ! Special cases
   read (iwfn,109) label,tote,gamma
@@ -115,13 +115,14 @@ subroutine rdwfn (wfnfile)
     ! Diagonalize total 1st-order matrix
     call jacobi (c1et, d1mata, v1mata, nrot)
     occ(1:nmo) = d1mata(1:nmo)
+    !TODO:change to matmult
     do i = 1,nmo
       do j = 1,nprims
         tmp = 0.0_rp
         do k = 1,nmo
-          tmp = tmp + v1mata(k,i)*coef(k+nmo,j)
+          tmp = tmp + v1mata(k,i)*coefcan(k+nmo,j)
         end do
-        coef(i,j) = tmp
+        coefnat(i,j) = tmp
       end do
     end do
     call free ('rdwfn', 'v1mata', v1mata)

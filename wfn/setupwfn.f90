@@ -7,13 +7,14 @@ subroutine setupwfn ()
   use mod_prec, only: rp, ip
   use mod_memory, only: alloc, free
   use mod_io, only: ferror, faterr
-  use mod_wfn, only: nmo, nprims, ncent, coef, maxgrp, mgrp, numshells, &
+  use mod_wfn, only: nmo, nprims, ncent, coef=>coefnat, maxgrp, mgrp, &
+                     numshells, coefcan, &
                      icen, oexp, ityp, npc, nlm, nuexp, oexp, ngroup, &
                      icenat, nzexp, allocate_space_for_shells
   implicit none
 
   real(kind=rp) :: alph
-  integer(kind=ip) :: npa, nmotot, i, ic, icentro, inda, isud
+  integer(kind=ip) :: npa, i, ic, icentro, inda, isud
   integer(kind=ip) :: isuk, itd, itip, itk, j, k, m, npcant
   real(kind=rp), allocatable, dimension(:) :: oexpa
   real(kind=rp), allocatable, dimension(:,:) :: coefa
@@ -21,20 +22,19 @@ subroutine setupwfn ()
   integer(kind=ip), allocatable, dimension(:) :: itypa
 
   ! Init
-  nmotot = nmo + nmo
   call alloc ('setupwfn', 'oexpa', oexpa, nprims)
-  call alloc ('setupwfn', 'coefa', coefa, nmotot, nprims)
+  call alloc ('setupwfn', 'coefa', coefa, nmo, nprims)
   call alloc ('setupwfn', 'icena', icena, nprims)
   call alloc ('setupwfn', 'itypa', itypa, nprims)
   npa = 1_ip
   icena(1) = icen(1)
   oexpa(1) = oexp(1)
   itypa(1) = ityp(1)
-  coefa(1:nmotot,1) = coef(1:nmotot,1)
+  coefa(1:nmo,1) = coef(1:nmo,1)
   cyclej: do j= 2,nprims
     do m = 1,npa
       if (icen(j).eq.icena(m) .and. ityp(j).eq.itypa(m) .and. abs(oexp(j)-oexpa(m)).le.1d-10) then
-        coefa(1:nmotot,m) = coefa(1:nmotot,m)+coef(1:nmotot,j)
+        coefa(1:nmo,m) = coefa(1:nmo,m)+coef(1:nmo,j)
         cycle cyclej
       end if
     end do
@@ -42,7 +42,7 @@ subroutine setupwfn ()
     icena(npa) = icen(j)
     oexpa(npa) = oexp(j)
     itypa(npa) = ityp(j)
-    coefa(1:nmotot,npa) = coef(1:nmotot,j)
+    coefa(1:nmo,npa) = coef(1:nmo,j)
   end do cyclej
 
   ! Recompute the original variables
@@ -53,7 +53,7 @@ subroutine setupwfn ()
     icen(j) = icena(j)
     oexp(j) = oexpa(j)
     ityp(j) = itypa(j)
-    coef(1:nmotot,j) = coefa(1:nmotot,j)
+    coef(1:nmo,j) = coefa(1:nmo,j)
   end do
 
   ! Determine primitives corresponding to each center.
@@ -117,16 +117,20 @@ subroutine setupwfn ()
         itypa(i) = itip
         oexpa(i) = alph
         icena(i) = icentro
-        coefa(1:nmotot,i) = coef(1:nmotot,j)
+        coefa(1:nmo,i) = coef(1:nmo,j)
       enddo
     end do
   end do
   
+  call free ('setupwfn', 'coefnat', coef)
+  call free ('setupwfn', 'coefcan', coefcan)
+  call alloc ('setupwfn', 'coefnat', coef, nmo, nprims)
+  call alloc ('setupwfn', 'coefcan', coefcan, nmo, nprims)
   do i = 1,nprims
     ityp(i) = itypa(i)
     oexp(i) = oexpa(i)
     icen(i) = icena(i)
-    coef(1:nmotot,i) = coefa(1:nmotot,i)
+    coef(1:nmo,i) = coefa(1:nmo,i)
   end do
  
   npcant = 0_ip
