@@ -23,7 +23,7 @@ libsurf:
 libgeom:
 	cd geom/ && $(MAKE)
 
-promolden: libcommon libwfn libsurf $(obj)
+promolden: libcommon libwfn libgeom libsurf $(obj)
 	$(FCOMPL) $(LDFLAG) -o $(exe) $(obj) wfn/libwfn.a surf/libsurf.a \
   geom/libgeom.a common/libcommon.a
 

@@ -94,16 +94,7 @@ module mod_datatm
       1.36D0,1.36D0,1.32D0,1.45D0,1.46D0,1.48D0,1.40D0,1.50D0,1.50D0,2.60D0,2.21D0,& !Pt~Ra(78~88)
       2.15D0,2.06D0,2.00D0,1.96D0,1.90D0,1.87D0,1.80D0,1.69D0,(1.5D0,i=97,maxzat)/) / bohrtoa !Ac~Cm(89~96),~all
 
-  !covalent (or ionic) radii by atomic element (Angstroms) from
-  !"Inorganic Chemistry" 3rd ed, Housecroft, Appendix 6, pgs 1013-1014
-  !cov_rads =  'H' : 0.37, 'C' : 0.77, 'O' : 0.73, 'N' : 0.75, 'F' : 0.71,
-  !'P' : 1.10, 'S' : 1.03, 'Cl': 0.99, 'Br': 1.14, 'I' : 1.33, 'He': 0.30,
-  !'Ne': 0.84, 'Ar': 1.00, 'Li': 1.02, 'Be': 0.27, 'B' : 0.88, 'Na': 1.02,
-  !'Mg': 0.72, 'Al': 1.30, 'Si': 1.18, 'K' : 1.38, 'Ca': 1.00, 'Sc': 0.75,
-  !'Ti': 0.86, 'V' : 0.79, 'Cr': 0.73, 'Mn': 0.67, 'Fe': 0.61, 'Co': 0.64,
-  !'Ni': 0.55, 'Cu': 0.46, 'Zn': 0.60, 'Ga': 1.22, 'Ge': 1.22, 'As': 1.22,
-  !'Se': 1.17, 'Kr': 1.03, 'X' : 0.00}
-  !Evelio
+  !Evelio -> in Angstroms
   !   data (covrad(i),i=1,85) 
   !  .   /0.32d0,0.93d0,1.23d0,0.90d0,0.82d0,0.77d0,0.75d0,0.73d0, 
   !  .    0.72d0,0.71d0,1.54d0,1.36d0,1.18d0,1.11d0,1.06d0,1.02d0, 
