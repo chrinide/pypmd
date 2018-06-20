@@ -54,23 +54,3 @@ subroutine cmcq ()
   if (nrot .lt. 0) call ferror ('cmcq','fail diag inertia', faterr)
 
 end subroutine
-!# rotate molecule to inertial frame of principal moments
-!def get_inertial_coords(geom, moi):
-!    moi_eigvals, moi_eigvecs = numpy.linalg.eig(moi)
-!    coords = geom[1]
-!    coords = numpy.array(numpy.dot(coords, moi_eigvecs))
-!    geom[1] = coords
-!    moi = get_moi(geom)
-!    order = [0, 1, 2]
-!    for p in range(3):
-!        for q in range(p+1, 3):
-!            if (moi.item(p, p) < moi.item(q, q)):
-!                temp = order[p]
-!                order[p] = order[q]
-!                order[q] = temp
-!    moveaxes = numpy.zeros((3, 3))
-!    for p in range(3):
-!        moveaxes[p][order[p]] = 1.0
-!    coords = numpy.dot(coords, moveaxes)
-!    geom[1] = coords
-!    return geom
