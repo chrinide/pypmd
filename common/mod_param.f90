@@ -8,7 +8,10 @@ module mod_param
   real(kind=rp), parameter :: VBIG = huge(1) !< a very big number
   real(kind=rp), parameter :: VSMALL = 1d-80   !< a very small number
   real(kind=rp), parameter :: pi = 3.14159265358979323846264338328_rp
+  real(kind=rp), parameter :: h = 6.62606896d-34 !< Planck ct. [J.s] (nist2006)
+  real(kind=rp), parameter :: na = 6.02214179d23 !< Avogadro ct. [1/mol] (nist2006)
   real(kind=rp), parameter :: bohrtoa = 0.52917720859d0 !< bohr to angstrom conversion factor
+  real(kind=rp), parameter :: c = 2.99792458d10 !< light speed [cm/s] (nist2006)
 
   ! Enumerate for structure formats
   logical :: isdata

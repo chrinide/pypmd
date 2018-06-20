@@ -5,8 +5,9 @@ wfn
   epsortho 1e-5
   rmaxatom 20.0
 endwfn
-load n2_rhf.wfn
-point 0.0 0.0 0.0
+load h2s_rhf.wfn
+#point 0.0 0.0 0.0
+geometry
 surf
   steeper 1
   ntrial 11

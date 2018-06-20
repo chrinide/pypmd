@@ -3,7 +3,7 @@ module mod_futils
   implicit none
   private
 
-  public :: timer
+  public :: timer, iqcksort
 
 contains
 
@@ -132,5 +132,92 @@ contains
 115 format (' #'/)
 
   end subroutine timer
+
+  !> Same as qcksort, for integer arrays.
+  !> WARNING! It is not stable!?!?
+  subroutine iqcksort(iarr, iord, first, last)
+
+    use mod_prec, only: rp, ip
+    use mod_io, only: ferror, faterr
+    integer(kind=ip), dimension(:), intent(in) :: iarr !< Array to be sorted
+    integer(kind=ip), dimension(:), intent(inout) :: iord !< Permutation array
+    integer(kind=ip), intent(in) :: first !< First index
+    integer(kind=ip), intent(in) :: last  !< Last index
+
+    integer(kind=ip), parameter :: m = 7, nstack = 100
+    real(kind=rp), parameter :: fm = 7875d0, fa = 211d0
+    real(kind=rp), parameter :: fc = 1663d0, fmi = 1.2698413d-4
+    real(kind=rp) :: fx
+    integer(kind=ip) :: istack(nstack), jstack, l, ir, j, na, a, i, iq 
+
+    jstack=0
+    l=first
+    ir=last
+    fx=0
+10  if(ir-l.lt.m)then
+       do j=l+1,ir
+          na=iord(j)
+          a=iarr(na)
+          do i=j-1,first,-1
+             if(iarr(iord(i)).le.a) go to 12
+             iord(i+1)=iord(i)
+          enddo
+          i=first-1
+12        iord(i+1)=na
+       enddo
+       if(jstack.eq.0)return
+       ir=istack(jstack)
+       l=istack(jstack-1)
+       jstack=jstack-2
+    else
+       i=l
+       j=ir
+       fx=mod(fx*fa+fc,fm)
+       iq=l+int((ir-l+1)*(fx*fmi))
+       na=iord(iq)
+       a=iarr(na)
+       iord(iq)=iord(l)
+20     continue
+21     if (j.ge.first) then 
+          if (a.lt.iarr(iord(j))) then
+             j=j-1
+             goto 21
+          endif
+       endif
+       if(j.le.i)then
+          iord(i)=na
+          go to 30
+       endif
+       iord(i)=iord(j)
+       i=i+1
+22     if (i.le.last) then 
+          if (a.gt.iarr(iord(i))) then
+             i=i+1
+             goto 22
+          endif
+       endif
+       if(j.le.i)then
+          iord(j)=na
+          i=j
+          go to 30
+       endif
+       iord(j)=iord(i)
+       j=j-1
+       go to 20
+30     jstack=jstack+2
+       if(jstack.gt.nstack) call ferror ('qcksort','Increase nstack',faterr) 
+       if(ir-i.ge.i-l)then
+          istack(jstack)=ir
+          istack(jstack-1)=i+1
+          ir=i-1
+       else
+          istack(jstack)=i-1
+          istack(jstack-1)=l
+          l=i+1
+       endif
+    endif
+    go to 10
+
+  end subroutine iqcksort
 
 end module mod_futils

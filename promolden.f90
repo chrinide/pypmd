@@ -163,6 +163,10 @@ program promolden
       if (.not.ok) call ferror('promolden', 'wrong rprimer line', faterr) 
       rval = abs(rval)
       call optssurf(word,rval=rval)
+    
+    ! Geometry analysis
+    else if (equal(word,'geometry')) then
+      call loadgeom()
 
     ! End of input
     else if (equal(word,'end')) then
