@@ -72,8 +72,6 @@ subroutine infogeom ()
     write (uout, *) mhz, cm1
   end do
 
-  call connect (1.2_rp)
-
 contains
 
   logical function are_same(n1, n2, tol)

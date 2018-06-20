@@ -5,5 +5,6 @@ subroutine loadgeom()
 
   call cmcq ()
   if (verbose) call infogeom ()
+  call connect ()
 
 end subroutine loadgeom

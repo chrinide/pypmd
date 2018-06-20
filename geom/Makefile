@@ -19,7 +19,8 @@ all : $(obj)
 %.mod: %.o
 	@if [ ! -f $@ ]; then rm $< ; $(MAKE) $< ; fi
 
-OBJECTS = mod_geom.o polich.o cmcq.o loadgeom.o infogeom.o connect.o
+OBJECTS = mod_geom.o polich.o cmcq.o loadgeom.o infogeom.o \
+					init_geom.o connect.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)

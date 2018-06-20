@@ -2,8 +2,7 @@
 ! routine determines the connectivity matrix, diagonalizes it, 
 ! determines the characteristic polynomiun, the first n powers of the 
 ! connectivity matrix, and the so-called distance matrix.
-! TODO: put again forall
-subroutine connect (covx)
+subroutine connect ()
 
   use iso_fortran_env, only: uout=>output_unit
   use mod_prec, only: rp, ip
@@ -12,10 +11,9 @@ subroutine connect (covx)
   use mod_datatm, only: covr
   use mod_linalg, only: jacobi
   use mod_futils, only: iqcksort
+  use mod_geom, only: covx
   implicit none
       
-  real(kind=rp), intent(in) :: covx
-
   integer(kind=ip), parameter :: maxcoord = 20
   integer(kind=ip), parameter :: infinity = -1
 

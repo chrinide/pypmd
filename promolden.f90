@@ -52,6 +52,7 @@ program promolden
 
   call init_param ()
   call init_wfn ()
+  call init_geom ()
   call init_surf ()
   
   if (index(optv,"d") /= 0) then
