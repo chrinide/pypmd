@@ -54,7 +54,7 @@ module mod_sym
   ! point_g2 ...... Point group symbol (short version).
   ! opmainord ..... Order of the main axis.
   ! 
-  integer(kind=ip), parameter :: MOPSYM = 480
+  integer(kind=ip), parameter, public :: MOPSYM = 480
   logical, public  :: opproper(MOPSYM), opisgener(MOPSYM)
   integer(kind=ip), public  :: nopsym, optype(MOPSYM), oporder(MOPSYM)
   integer(kind=ip), public  :: opm(MOPSYM), opinv(MOPSYM)

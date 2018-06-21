@@ -9,6 +9,6 @@ OPT    =
 #-Ofast -ffast-math -mtune=native -march=native \
 #-funsafe-loop-optimizations -funsafe-math-optimizations
 SYSDEP = 
-LDFLAG = -m64 -fopenmp
+LDFLAG = -m64 -fopenmp -lblas -llapack
 AR = ar rc
 RANLIB = ranlib
