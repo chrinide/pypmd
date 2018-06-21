@@ -50,12 +50,6 @@ program promolden
   call cpu_time (tiempo1)
   !$ tiempo1 = omp_get_wtime()
 
-  call init_param ()
-  call init_wfn ()
-  call init_geom ()
-  call init_sym ()
-  call init_surf ()
-  
   if (index(optv,"d") /= 0) then
     call optsparam('debug',.true.)
     call optsparam('verbose',.true.)
@@ -65,6 +59,12 @@ program promolden
     goto 1
   end if
 
+  call init_param ()
+  call init_wfn ()
+  call init_geom ()
+  call init_sym ()
+  call init_surf ()
+  
   ! Read the input file
   call flush_unit (uout)
   write (uout,'(1x,a)') string('# +++ Begin to read input')
