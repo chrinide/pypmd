@@ -21,7 +21,7 @@ all : $(obj)
 
 OBJECTS = mod_prec.o mod_io.o mod_memory.o mod_param.o \
 mod_futils.o mod_linalg.o init_param.o quadratures.o \
-optsparam.o lebgrid.o mod_datatm.o
+optsparam.o lebgrid.o mod_datatm.o mod_math.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)

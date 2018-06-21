@@ -3,6 +3,8 @@ module mod_sym
   use mod_prec, only: rp, ip
   implicit none
   private
+
+  real(kind=rp), allocatable, dimension(:,:), public :: xyzcom
   
   !
   ! symmetry params

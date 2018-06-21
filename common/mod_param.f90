@@ -12,6 +12,8 @@ module mod_param
   real(kind=rp), parameter :: na = 6.02214179d23 !< Avogadro ct. [1/mol] (nist2006)
   real(kind=rp), parameter :: bohrtoa = 0.52917720859d0 !< bohr to angstrom conversion factor
   real(kind=rp), parameter :: c = 2.99792458d10 !< light speed [cm/s] (nist2006)
+  real(kind=rp), parameter :: rad2deg = 180.0_rp/pi
+  real(kind=rp), parameter :: deg2rad = pi/180.0_rp
 
   ! Enumerate for structure formats
   logical :: isdata

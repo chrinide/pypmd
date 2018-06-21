@@ -19,7 +19,7 @@ all : $(obj)
 %.mod: %.o
 	@if [ ! -f $@ ]; then rm $< ; $(MAKE) $< ; fi
 
-OBJECTS = mod_sym.o
+OBJECTS = mod_sym.o init_sym.o end_sym.o numbersym.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)
