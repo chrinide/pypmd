@@ -20,7 +20,7 @@ all : $(obj)
 	@if [ ! -f $@ ]; then rm $< ; $(MAKE) $< ; fi
 
 OBJECTS = mod_geom.o polich.o cmcq.o loadgeom.o infogeom.o \
-					init_geom.o connect.o
+					init_geom.o connect.o optsgeom.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)

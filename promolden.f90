@@ -167,6 +167,13 @@ program promolden
       call optssurf(word,rval=rval)
     
     ! Geometry analysis
+    else if (equal(word,'covx')) then
+      ok = isreal(rval, line, lp)
+      ok = ok .and. rval.ne.0.0_rp
+      if (.not.ok) call ferror('promolden', 'wrong covx line', faterr) 
+      rval = abs(rval)
+      call optsgeom(word,rval)
+
     else if (equal(word,'geometry')) then
       call loadgeom()
 

@@ -1,8 +1,9 @@
 subroutine rdwfx (wfnfile)
 
   use mod_prec, only: rp, ip
+  use mod_memory, only: free, alloc
   use mod_io, only: ferror, faterr, udat, string, warning, &
-                    getline_raw
+                    getline_raw, mline
   use mod_wfn, only: maxtype, ncent, nmo, nprims, &
                      occ, oexp, ityp, xyz, rint, rdm, ncore, &
                      atnam, charge, icen, coefcan, c1et, epsocc, &
@@ -13,9 +14,16 @@ subroutine rdwfx (wfnfile)
 
   character(len=*), intent(in) :: wfnfile
 
+  logical :: keyw(7)
   integer(kind=ip) :: iwfn, i, icounto, icountv
   character(len=:), allocatable :: line, line2 
-  logical :: keyw(7)
+  real(kind=rp), allocatable, dimension(:,:) :: v1mata
+  real(kind=rp), allocatable, dimension(:) :: d1mata
+  real(kind=rp), allocatable, dimension(:,:) :: xyztmp
+  integer(kind=ip) :: icol, ifil, j, k, nerr, nrot
+  real(kind=rp) :: cij, cji, dis, rho1val, tmp
+  real(kind=rp) :: x1, x2, y1, y2, z1, z2
+  character(len=mline) :: rholine
 
   ! Init data
   open (udat,file=wfnfile,status='old') 
@@ -78,6 +86,8 @@ subroutine rdwfx (wfnfile)
       else if (trim(line) == "<Primitive Exponents>") then
         oexp = wfx_read_reals1(iwfn,nprims)
         keyw(3) = .true.
+      else if (trim(line) == "<1-RDM>") then
+        rdm = .true.
       else if (trim(line) == "<Molecular Orbital Occupation Numbers>") then
         occ = wfx_read_reals1(iwfn,nmo)
         do i = 1,nmo
@@ -94,15 +104,94 @@ subroutine rdwfx (wfnfile)
           coefnat(i,:) = wfx_read_reals1(iwfn,nprims)
         end do
         keyw(5) = .true.
+      else if (trim(line) == "<Nuclear Charges>") then ! Check this for ECP
+        charge = wfx_read_reals1(iwfn,ncent)
+        do i = 1,ncent
+          !atnam(i) = nameguess(int(charge(i),4))
+        end do
+        keyw(6) = .true.
+      else if (trim(line) == "<Nuclear Cartesian Coordinates>") then
+        call alloc ('rdwfx', 'xyztmp', xyztmp, 3, ncent)
+        xyztmp = reshape(wfx_read_reals1(iwfn,3*ncent),shape(xyztmp))
+        xyztmp = reshape(xyztmp,(/3,ncent/))
+        do i = 1,ncent 
+          do j = 1,3
+            xyz(i,j) = xyztmp(j,i)
+          end do
+        end do
+        call free ('rdwfx', 'xyztmp', xyztmp)
+        keyw(7) = .true.
       end if
     end if
   end do
 20 continue
   if (any(.not.keyw)) call ferror("rdwfx", "missing array in wfx file", faterr)
 
+  ! Evaluate internuclear distances
+  ! TODO:mv out
+  do i = 1,ncent
+    x1 = xyz(i,1)
+    y1 = xyz(i,2)
+    z1 = xyz(i,3)
+    do j = 1,i
+      x2 = xyz(j,1)
+      y2 = xyz(j,2)
+      z2 = xyz(j,3)
+      dis = sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
+      rint(i,j) = dis
+      rint(j,i) = dis
+    end do
+  end do
+
   ! Reduce and set info
   call setupwfn ()
   coefcan = coefnat
+
+  ! RDM 
+  if (rdm) then
+    call allocate_space_for_rdm ()
+    call alloc ('rdwfx', 'v1mata', v1mata , nmo, nmo)
+    call alloc ('rdwfx', 'd1mata', d1mata , nmo)
+    open (57,file=trim(wfnfile)//".1rdm",status='old',iostat=nerr)
+    if (nerr.ne.0) then
+      call ferror('rdwfx', 'unable to open 1rdm file', faterr)
+    end if
+    read (57,'(a)') rholine
+    do
+      read (57,*,err=123) ifil, icol, rho1val
+      if (ifil.gt.nmo .or. icol.gt.nmo) then
+        call ferror('rdwfx', 'row and/or column > nmo', faterr)
+      else
+        c1et(ifil,icol) = rho1val
+      end if
+    end do
+123 close (57)
+    ! Test the symmetric character of c1et().
+    do i = 2,nmo
+      do j = 1,i-1
+        cij = c1et(i,j)
+        cji = c1et(j,i)
+        c1et(i,j) = 0.5_rp*(cij+cji)
+        c1et(j,i) = c1et(i,j)
+      end do
+    end do
+    ! Diagonalize total 1st-order matrix
+    call jacobi (c1et, d1mata, v1mata, nrot)
+    occ(1:nmo) = d1mata(1:nmo)
+    !TODO:change to matmult
+    do i = 1,nmo
+      do j = 1,nprims
+        tmp = 0.0_rp
+        do k = 1,nmo
+          tmp = tmp + v1mata(k,i)*coefcan(k+nmo,j)
+        end do
+        coefnat(i,j) = tmp
+      end do
+    end do
+    call free ('rdwfx', 'v1mata', v1mata)
+    call free ('rdwfx', 'd1mata', d1mata)
+    call deallocate_space_for_rdm ()
+  end if
   
   ! Get only occupied orbital for density
   noccupied = count(abs(occ)>epsocc)
