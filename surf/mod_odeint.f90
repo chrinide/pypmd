@@ -76,25 +76,25 @@ contains
     ! Local vars
     real(kind=rp) :: rho, grad(3), gradmod
     real(kind=rp) :: ak2(3), ak3(3), ak4(3), ak5(3), ak6(3)
-    real(kind=rp), parameter :: b21=0.2d0,                           &
-                                b31=3.0d0/40.0d0,                    &
-                                b32=9.0d0/40.0d0,                    &
-                                b41=0.3d0,b42=-0.9d0,b43=1.2d0,      &
-                                b51=-11.0d0/54.0d0,b52=2.5d0,        &
-                                b53=-70.0d0/27.0d0,b54=35.d0/27.0d0, &
-                                b61=1631.0d0/55296.0d0,              &
-                                b62=175.0d0/512.0d0,                 &
-                                b63=575.0d0/13824.0d0,               &
-                                b64=44275.0d0/110592.0d0,            &
-                                b65=253.0d0/4096.0d0                  
-    real(kind=rp), parameter :: c1=37.0d0/378.0d0,c3=250.0d0/621.0d0,&
-                                c4=125.0d0/594.0d0,                  &
-                                c6=512.0d0/1771.0d0                   
-    real(kind=rp), parameter :: dc1=c1-2825.0d0/27648.0d0,           &
-                                dc3=c3-18575.0d0/48384.0d0,          &
-                                dc4=c4-13525.0d0/55296.0d0,          &
-                                dc5=-277.0d0/14336.0d0,              &
-                                dc6=c6-0.25d0                         
+    real(kind=rp), parameter :: b21=0.2_rp,                           &
+                                b31=3.0_rp/40.0_rp,                    &
+                                b32=9.0_rp/40.0_rp,                    &
+                                b41=0.3_rp,b42=-0.9_rp,b43=1.2_rp,      &
+                                b51=-11.0_rp/54.0_rp,b52=2.5_rp,        &
+                                b53=-70.0_rp/27.0_rp,b54=35._rp/27.0_rp, &
+                                b61=1631.0_rp/55296.0_rp,              &
+                                b62=175.0_rp/512.0_rp,                 &
+                                b63=575.0_rp/13824.0_rp,               &
+                                b64=44275.0_rp/110592.0_rp,            &
+                                b65=253.0_rp/4096.0_rp                  
+    real(kind=rp), parameter :: c1=37.0_rp/378.0_rp,c3=250.0_rp/621.0_rp,&
+                                c4=125.0_rp/594.0_rp,                  &
+                                c6=512.0_rp/1771.0_rp                   
+    real(kind=rp), parameter :: dc1=c1-2825.0_rp/27648.0_rp,           &
+                                dc3=c3-18575.0_rp/48384.0_rp,          &
+                                dc4=c4-13525.0_rp/55296.0_rp,          &
+                                dc5=-277.0_rp/14336.0_rp,              &
+                                dc6=c6-0.25_rp                         
    
     interface
       subroutine pointr1 (p,rho,grad,gradmod)
@@ -290,39 +290,39 @@ contains
     real(kind=rp), intent(out) :: yout(3)
     real(kind=rp), intent(in) :: h
 
-    real(kind=rp), parameter :: b21 = 1.0d0/5.0d0
-    real(kind=rp), parameter :: b31 = 3.0d0/40.0d0
-    real(kind=rp), parameter :: b32 = 9.0d0/40.0d0
-    real(kind=rp), parameter :: b41 = 44.0d0/45.0d0
-    real(kind=rp), parameter :: b42 = -56.0d0/15.0d0
-    real(kind=rp), parameter :: b43 = 32.0d0/9.0d0
-    real(kind=rp), parameter :: b51 = 19372.0d0/6561.0d0
-    real(kind=rp), parameter :: b52 = -25360.0d0/2187.0d0
-    real(kind=rp), parameter :: b53 = 64448.0d0/6561.0d0
-    real(kind=rp), parameter :: b54 = -212.0d0/729.0d0
-    real(kind=rp), parameter :: b61 = 9017.0d0/3168.0d0
-    real(kind=rp), parameter :: b62 = -355.0d0/33.0d0
-    real(kind=rp), parameter :: b63 = 46732.0d0/5247.0d0
-    real(kind=rp), parameter :: b64 = 49.0d0/176.0d0
-    real(kind=rp), parameter :: b65 = -5103.0d0/18656.0d0
-    real(kind=rp), parameter :: b71 = 35.0d0/384.0d0
-    real(kind=rp), parameter :: b73 = 500.0d0/1113.0d0
-    real(kind=rp), parameter :: b74 = 125.0d0/192.0d0
-    real(kind=rp), parameter :: b75 = -2187.0d0/6784.0d0
-    real(kind=rp), parameter :: b76 = 11.0d0/84.0d0
+    real(kind=rp), parameter :: b21 = 1.0_rp/5.0_rp
+    real(kind=rp), parameter :: b31 = 3.0_rp/40.0_rp
+    real(kind=rp), parameter :: b32 = 9.0_rp/40.0_rp
+    real(kind=rp), parameter :: b41 = 44.0_rp/45.0_rp
+    real(kind=rp), parameter :: b42 = -56.0_rp/15.0_rp
+    real(kind=rp), parameter :: b43 = 32.0_rp/9.0_rp
+    real(kind=rp), parameter :: b51 = 19372.0_rp/6561.0_rp
+    real(kind=rp), parameter :: b52 = -25360.0_rp/2187.0_rp
+    real(kind=rp), parameter :: b53 = 64448.0_rp/6561.0_rp
+    real(kind=rp), parameter :: b54 = -212.0_rp/729.0_rp
+    real(kind=rp), parameter :: b61 = 9017.0_rp/3168.0_rp
+    real(kind=rp), parameter :: b62 = -355.0_rp/33.0_rp
+    real(kind=rp), parameter :: b63 = 46732.0_rp/5247.0_rp
+    real(kind=rp), parameter :: b64 = 49.0_rp/176.0_rp
+    real(kind=rp), parameter :: b65 = -5103.0_rp/18656.0_rp
+    real(kind=rp), parameter :: b71 = 35.0_rp/384.0_rp
+    real(kind=rp), parameter :: b73 = 500.0_rp/1113.0_rp
+    real(kind=rp), parameter :: b74 = 125.0_rp/192.0_rp
+    real(kind=rp), parameter :: b75 = -2187.0_rp/6784.0_rp
+    real(kind=rp), parameter :: b76 = 11.0_rp/84.0_rp
 
-    real(kind=rp), parameter :: c1 = 5179.0d0/57600.0d0
-    real(kind=rp), parameter :: c3 = 7571.0d0/16695.0d0
-    real(kind=rp), parameter :: c4 = 393.0d0/640.0d0
-    real(kind=rp), parameter :: c5 = -92097.0d0/339200.0d0
-    real(kind=rp), parameter :: c6 = 187.0d0/2100.0d0
-    real(kind=rp), parameter :: c7 = 1.0d0/40.0d0
+    real(kind=rp), parameter :: c1 = 5179.0_rp/57600.0_rp
+    real(kind=rp), parameter :: c3 = 7571.0_rp/16695.0_rp
+    real(kind=rp), parameter :: c4 = 393.0_rp/640.0_rp
+    real(kind=rp), parameter :: c5 = -92097.0_rp/339200.0_rp
+    real(kind=rp), parameter :: c6 = 187.0_rp/2100.0_rp
+    real(kind=rp), parameter :: c7 = 1.0_rp/40.0_rp
 
-    real(kind=rp), parameter :: d1 = 35.0d0/384.0d0
-    real(kind=rp), parameter :: d3 = 500.0d0/1113.0d0
-    real(kind=rp), parameter :: d4 = 125.0d0/192.0d0
-    real(kind=rp), parameter :: d5 = -2187.0d0/6784.0d0
-    real(kind=rp), parameter :: d6 = 11.0d0/84.0d0
+    real(kind=rp), parameter :: d1 = 35.0_rp/384.0_rp
+    real(kind=rp), parameter :: d3 = 500.0_rp/1113.0_rp
+    real(kind=rp), parameter :: d4 = 125.0_rp/192.0_rp
+    real(kind=rp), parameter :: d5 = -2187.0_rp/6784.0_rp
+    real(kind=rp), parameter :: d6 = 11.0_rp/84.0_rp
 
     real(kind=rp) :: rho, grad(3), gradmod
     real(kind=rp) :: ak1(3), ak2(3), ak3(3), ak4(3), ak5(3), ak6(3), ak7(3)
