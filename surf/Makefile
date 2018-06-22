@@ -21,7 +21,7 @@ all : $(obj)
 
 OBJECTS = mod_surf.o init_surf.o findnuc.o gradrho.o \
 					weightheta.o iscp.o infosurf.o end_surf.o \
-					optssurf.o mod_odeint.o ray.o
+					optssurf.o mod_odeint.o ray.o surface.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)
