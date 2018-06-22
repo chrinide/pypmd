@@ -68,7 +68,9 @@ subroutine transformsym (xleft, xright)
     if (abs(abs(xtrace)-3.0_rp) .le. TOLisint) then
       if (xtrace .gt. 0.0_rp) then
         opsymbol(iop) = 'E'
-        opaxis(iop,:) = 0.0_rp
+        opaxis(iop,1) = 0.0_rp
+        opaxis(iop,2) = 0.0_rp
+        opaxis(iop,3) = 1.0_rp
         oporder(iop) = 1_ip
         opm(iop) = 1_ip
         opangle(iop) = pi + pi

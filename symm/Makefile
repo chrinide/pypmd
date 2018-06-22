@@ -20,7 +20,8 @@ all : $(obj)
 	@if [ ! -f $@ ]; then rm $< ; $(MAKE) $< ; fi
 
 OBJECTS = mod_sym.o init_sym.o end_sym.o numbersym.o transformsym.o \
-					backsym.o eigensym.o replicatesym.o orbsym.o
+					backsym.o eigensym.o replicatesym.o orbsym.o detersym.o \
+					noisesym.o opaddsym.o optssym.o optssym.o loadsym.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)

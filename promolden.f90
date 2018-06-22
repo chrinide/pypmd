@@ -177,6 +177,10 @@ program promolden
     else if (equal(word,'geometry')) then
       call loadgeom()
 
+    ! Symmetry analysis
+    else if (equal(word,'symmetry')) then
+      call loadsym()
+
     ! End of input
     else if (equal(word,'end')) then
       exit
