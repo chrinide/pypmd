@@ -72,7 +72,7 @@ module mod_sym
   ! 
   ! Classes of symmetry operations:
   !
-  integer(kind=ip), parameter :: MCLAS = 120, MINCLAS = 200
+  integer(kind=ip), parameter, public :: MCLAS = 120, MINCLAS = 200
   integer(kind=ip), public :: nclas, opclas(MOPSYM)
   integer(kind=ip), public :: ninclas(MCLAS), iinclas(MCLAS,MINCLAS)
   !

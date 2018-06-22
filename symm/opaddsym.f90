@@ -2,21 +2,22 @@
 subroutine opaddsym (xmat)
 
   use iso_fortran_env, only: uout=>output_unit
-  use mod_io, only: ferror, faterr
+  use mod_io, only: ferror, faterr, warning
   use mod_prec, only: ip, rp
-  use mod_param, only: debug, verbose, pi
+  use mod_param, only: debug, pi
   use mod_sym, only: nopsym, opsym, toleqvm, mopsym, opeuler, &
                      tolisint, opproper, opm, opsymbol, optype, &
                      oporder, opangle, opaxis, opt_identity, &
-                     opt_inversion
+                     opt_inversion, opt_imp_rotation, opt_rotation, &
+                     opt_sigma, tolnull
   use mod_math, only: inv , euler
   implicit none
  
   real(kind=rp), intent(in) :: xmat(3,3)
 
   integer(kind=ip), parameter :: MOP = 20
-  integer(kind=ip) :: i, j, k, ierr, ii, ij, ik, ibest 
-  real(kind=rp) :: diff, xtrace, xdet, xnorm, xnm, ang1, angle 
+  integer(kind=ip) :: i, j, k, ierr, ii, ibest 
+  real(kind=rp) :: diff, xtrace, xdet, xnm, ang1, angle 
   real(kind=rp) :: err, besterr, xinv(3,3), xval(3), xvect(3,3), xeul(3)
   character(len=40) :: fmt
   logical :: found
@@ -87,63 +88,61 @@ subroutine opaddsym (xmat)
     end if
   else
     ang1 = 0.5_rp*(xtrace-xdet)
-    !if (abs(ang1) .gt. 1d0) ang1 = sign(1d0, ang1)
-    !angle = acos(ang1)
-    !if (abs(angle) .le. TOLnull) then
-    !  xnm = 1d0
-    !  angle = pi + pi
-    !else
-    !  xnm = 2d0 * pi / angle
-    !endif
-    !opangle(nopsym) = angle
-    !ii = 0
-    !found = .false.
-    !do while (.not. found .and. ii.le.MOP)
-    !  ii = ii + 1
-    !  found = abs(xnm*ii - nint(xnm*ii)) .le. TOLisint
-    !enddo
-    !if (found) then
-    !  oporder(nopsym) = nint(xnm*ii)
-    !  opm(nopsym) = ii
-    !else
-    !  call error ('symopadd', 'Using best approx order', warning)
-    !  ibest = 1
-    !  besterr = abs(xnm - nint(xnm))
-    !  do ii = 2, MOP
-    !    err = abs(xnm*ii - nint(xnm*ii))
-    !    if (err .le. besterr) then
-    !      besterr = err
-    !      ibest = ii
-    !    endif
-    !  enddo
-    !  oporder(nopsym) = nint(xnm*ibest)
-    !  opm(nopsym) = ibest
-    !endif
-    !write (fmt,200) 1+int(log10(1d0*oporder(nopsym))) &
-    !                , 1+int(log10(1d0*opm(nopsym)))
-    !#ifdef __debug__
-    !write (0,501) fmt
-    !#endif
-    !call symeigen (xmat, xval, xvect, xdet, ierror)
-    !if (ierror .ne. 0) then
-    !  call error ('symopadd', 'Trouble finding the rotation axis', warning)
-    !endif
-    !opaxis(nopsym,1) = xvect(1,3)
-    !opaxis(nopsym,2) = xvect(2,3)
-    !opaxis(nopsym,3) = xvect(3,3)
-    !if (xdet .gt. 0d0) then
-    !  write (opsymbol(nopsym),fmt) 'C', oporder(nopsym), opm(nopsym)
-    !  optype(nopsym) = opt_rotation
-    !else if (abs(xtrace - 1d0) .le. TOLisint) then
-    !  write (opsymbol(nopsym),210) 'sigma'
-    !  optype(nopsym) = opt_sigma
-    !else if (oporder(nopsym).eq.1 .and. opm(nopsym).eq.1) then
-    !  write (opsymbol(nopsym),210) 'sigma'
-    !  optype(nopsym) = opt_sigma
-    !else
-    !  write (opsymbol(nopsym),fmt) 'S', oporder(nopsym), opm(nopsym)
-    !  optype(nopsym) = opt_imp_rotation
-    !endif
+    if (abs(ang1) .gt. 1.0_rp) ang1 = sign(1.0_rp, ang1)
+    angle = acos(ang1)
+    if (abs(angle) .le. TOLnull) then
+      xnm = 1.0_rp
+      angle = pi + pi
+    else
+      xnm = 2.0_rp*pi/angle
+    end if
+    opangle(nopsym) = angle
+    ii = 0
+    found = .false.
+    do while (.not. found .and. ii.le.MOP)
+      ii = ii + 1
+      found = abs(xnm*ii - nint(xnm*ii)) .le. TOLisint
+    end do
+    if (found) then
+      oporder(nopsym) = nint(xnm*ii)
+      opm(nopsym) = ii
+    else
+      call ferror ('opaddsym', 'using best approx order', warning)
+      ibest = 1
+      besterr = abs(xnm - nint(xnm))
+      do ii = 2, MOP
+        err = abs(xnm*ii - nint(xnm*ii))
+        if (err .le. besterr) then
+          besterr = err
+          ibest = ii
+        end if
+      end do
+      oporder(nopsym) = nint(xnm*ibest)
+      opm(nopsym) = ibest
+    end if
+    write (fmt,200) 1+int(log10(1d0*oporder(nopsym))), &
+                    1+int(log10(1d0*opm(nopsym)))
+    if (debug) write (uout,501) fmt
+    call eigensym (xmat, xval, xvect, xdet, ierr)
+    if (ierr .ne. 0) then
+      call ferror ('opaddsym', 'trouble finding the rotation axis', faterr)
+    endif
+    opaxis(nopsym,1) = xvect(1,3)
+    opaxis(nopsym,2) = xvect(2,3)
+    opaxis(nopsym,3) = xvect(3,3)
+    if (xdet .gt. 0.0_rp) then
+      write (opsymbol(nopsym),fmt) 'C', oporder(nopsym), opm(nopsym)
+      optype(nopsym) = opt_rotation
+    else if (abs(xtrace - 1d0) .le. TOLisint) then
+      write (opsymbol(nopsym),'(a)') 'sigma'
+      optype(nopsym) = opt_sigma
+    else if (oporder(nopsym).eq.1 .and. opm(nopsym).eq.1) then
+      write (opsymbol(nopsym),'(a)') 'sigma'
+      optype(nopsym) = opt_sigma
+    else
+      write (opsymbol(nopsym),fmt) 'S', oporder(nopsym), opm(nopsym)
+      optype(nopsym) = opt_imp_rotation
+    end if
   end if
   
   if (debug) then
@@ -164,7 +163,6 @@ subroutine opaddsym (xmat)
  
 501 format (1x, 'DBG(symopadd) fmt: ', a)
 200 format ('(a, "_", i', i2, ', "^", i', i2, ')')
-210 format (a)
 500 format (1x, 'DBG(symopadd) matrix: '/ (3f15.6))
 
 end subroutine opaddsym
