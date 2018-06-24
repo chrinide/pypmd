@@ -4,7 +4,9 @@ module mod_sym
   implicit none
   private
 
-  real(kind=rp), allocatable, dimension(:,:), public :: xyzcom
+  integer(kind=ip), public :: sdim
+  real(kind=rp), allocatable, dimension(:), public :: ax, ay, az
+  integer(kind=ip), allocatable, dimension(:), public :: atzmol
   
   !
   ! symmetry params

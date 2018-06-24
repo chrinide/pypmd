@@ -1,12 +1,10 @@
 subroutine init_sym()
 
   use mod_prec, only: rp, ip
-  use mod_memory, only: alloc
-  use mod_wfn, only: ncent
   use mod_sym, only: toldist, toleqvm, tolsng, tolisint, &
                      tolnull, toleigen, toldirty, toltriplet, &
                      errsng, erreigen, inf_order, mol_linear, &
-                     mol_planar, xyzcom
+                     mol_planar
   implicit none
     
   ! default values  
@@ -24,6 +22,5 @@ subroutine init_sym()
   mol_linear = .false.
   mol_planar = .false.
 
-  call alloc ('mod_sym', 'xyzcom', xyzcom, ncent, 3)
 
 end subroutine init_sym

@@ -1,6 +1,6 @@
 ! Estimate the average deviation of atoms with respect
 ! to the perfectly symmetric structure.
-subroutine noisesym (ax, ay, az, n)
+subroutine noisesym ()
 
   use iso_fortran_env, only: uout=>output_unit
   use mod_io, only: ferror, faterr
@@ -8,11 +8,8 @@ subroutine noisesym (ax, ay, az, n)
   use mod_param, only: verbose, pi
   use mod_sym, only: nopsym, norbit, opsym, opt_identity, opm, &
                      natorb, toldist, orbdis, oporder, opangle, &
-                     optype, iatorb
+                     optype, iatorb, ax, ay, az, n=>sdim
   implicit none
- 
-  integer(kind=ip), intent(in) ::  n
-  real(kind=rp), intent(in) :: ax(n), ay(n), az(n)
  
   integer(kind=ip) :: i, j, j1, k, iat, iorb, iop, kbest, kat
   real(kind=rp) :: R1, R2, R3

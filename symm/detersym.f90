@@ -1,18 +1,18 @@
 ! Determine linear, planar, 3d
-subroutine detersym(ax, ay, az, n)
+subroutine detersym()
 
   use iso_fortran_env, only: uout=>output_unit
   use mod_io, only: ferror, faterr
   use mod_prec, only: ip, rp
   use mod_param, only: debug, verbose
-  use mod_sym, only: mol_linear, mol_planar, toldist
+  use mod_sym, only: mol_linear, mol_planar, toldist, sdim, &
+                     ax, ay, az
   implicit none
 
-  integer(kind=ip), intent(in) ::  n
-  real(kind=rp), intent(in) :: ax(n), ay(n), az(n)
+  integer(kind=ip)  :: i, j, k, n
+  real(kind=rp) :: an(sdim), nor, sum1, sum2, p_esc, p_mixto, contri
 
-  integer(kind=ip)  :: i, j, k
-  real(kind=rp) :: an(n), nor, sum1, sum2, p_esc, p_mixto, contri
+  n = sdim
 
   if (verbose) write (uout,800)
   do i = 1,n

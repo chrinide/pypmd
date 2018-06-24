@@ -21,8 +21,9 @@ all : $(obj)
 
 OBJECTS = mod_sym.o init_sym.o end_sym.o numbersym.o transformsym.o \
 					backsym.o eigensym.o replicatesym.o orbsym.o detersym.o \
-					noisesym.o opaddsym.o optssym.o optssym.o loadsym.o \
-					closuresym.o
+					noisesym.o opaddsym.o optssym.o optssym.o loadsym.o infosym.o \
+					closuresym.o rwcoords.o d2sym.o opchksym.o getgroup.o d1sym.o \
+					d3sym.o
 
 clean:
 	@rm -f $(OBJECTS) *.mod $(obj)

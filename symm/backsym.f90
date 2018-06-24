@@ -1,17 +1,14 @@
 ! put back the molecule to the original orientation.
 ! The routine uses the orientation matrices obtained by symorient()
 ! to reverse its action.
-subroutine backsym (ax, ay, az, n)
+subroutine backsym ()
 
   use iso_fortran_env, only: uout=>output_unit
   use mod_prec, only: rp, ip
   use mod_io, only: string
   use mod_param, only: verbose
-  use mod_sym, only: or_mat, or_imat
+  use mod_sym, only: or_mat, or_imat, ax, ay, az, n=>sdim
   implicit none
-
-  integer(kind=ip), intent(in)  :: n
-  real(kind=rp), intent(inout) :: ax(n), ay(n), az(n)
 
   integer(kind=ip) :: i, j, iat
   real(kind=rp) :: xx, yy, zz, v(3,3), vinv(3,3)

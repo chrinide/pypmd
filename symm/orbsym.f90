@@ -1,22 +1,20 @@
 ! classify all atoms into orbits. All atoms in an orbit
 ! have the same atomic number and the same distance to the center.
-subroutine orbsym (ax, ay, az, atZmol, n)
+subroutine orbsym()
 
   use iso_fortran_env, only: uout=>output_unit
   use mod_io, only: ferror, faterr
   use mod_prec, only: ip, rp
   use mod_param, only: debug
   use mod_sym, only: matorb, norbit, morbit, toldist, molradius, &
-                     orbdis, orbz, orbmol, natorb, iatorb
+                     orbdis, orbz, orbmol, natorb, iatorb, sdim, &
+                     atzmol, ax, ay, az
   implicit none
  
-  integer(kind=ip), intent(in) :: n  
-  integer(kind=ip), intent(in), dimension(n) :: atZmol
-  real(kind=rp), intent(in), dimension(n) :: ax, ay, az
- 
   real(kind=rp) :: dis2
-  integer(kind=ip) :: i, j, iorb
+  integer(kind=ip) :: i, j, iorb, n
 
+  n = sdim
   ! Classify all atoms into orbits. All atoms in an orbit have the
   ! same atomic number and the same distance to the center of mass:
   norbit = 0
