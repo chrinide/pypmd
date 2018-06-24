@@ -17,7 +17,7 @@ logical function opchksym(xmat)
   opchksym = .false.
   do i = 1,3
     xii = xmat(1,i)*xmat(1,i) + xmat(2,i)*xmat(2,i) + xmat(3,i)*xmat(3,i)
-    if (abs(xii-1d0) .gt. TOLeqvm) return
+    if (abs(xii-1.0_rp) .gt. TOLeqvm) return
     do j = i+1,3
       xij = xmat(1,i)*xmat(1,j) + xmat(2,i)*xmat(2,j) + xmat(3,i)*xmat(3,j)
       if (abs(xij) .gt. TOLeqvm) return
