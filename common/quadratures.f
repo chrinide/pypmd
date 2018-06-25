@@ -1,3 +1,21 @@
+c Copyright (c) 2018 
+c Jose Luis Casals Sainz <jluiscasalssainz@gmail.com>,
+c Ángel Martín Pendás <angel@fluor.quimica.uniovi.es> and 
+c Evelio Francisco Miguelez <evelio@uniovi.es>. 
+c
+c promolden is free software: you can redistribute it and/or modify
+c it under the terms of the GNU General Public License as published by
+c the Free Software Foundation, either version 3 of the License, or (at
+c your option) any later version.
+c 
+c promolden is distributed in the hope that it will be useful,
+c but WITHOUT ANY WARRANTY; without even the implied warranty of
+c MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+c GNU General Public License for more details.
+c 
+c You should have received a copy of the GNU General Public License
+c along with this program.  If not, see <http://www.gnu.org/licenses/>.
+c
       subroutine gauleg (x1,x2,x,w,n)
 c
 c.....Given the lower and upper limits of integration x1 and x2, 
