@@ -23,11 +23,10 @@ subroutine d2sym()
   use iso_fortran_env, only: uout=>output_unit
   use mod_io, only: ferror, faterr
   use mod_prec, only: ip, rp
-  use mod_param, only: debug, verbose
+  use mod_param, only: debug
   use mod_math, only: matfill, inv
-  use mod_sym, only: mol_linear, mol_planar, toldist, nmol=>sdim, &
-                     ax, ay, az, atzmol, linear_mol, errsng, nopsym, &
-                     toldirty, tolsng, orbmol
+  use mod_sym, only: toldist, nmol=>sdim, ax, ay, az, linear_mol, &
+                     errsng, nopsym, toldirty, tolsng, orbmol
   implicit none
  
   real(kind=rp), dimension(3,3) :: v, vinv, xmat, xm, xv, xop

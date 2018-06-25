@@ -245,7 +245,7 @@ subroutine getgroup ()
     call ferror ('getgroup', 'unknown group', faterr)
   end if
  
-500 format (a, ', n = ', i2)
+!500 format (a, ', n = ', i2)
 700 format (/                                               &
     1x, '++SYMGETGROUP:'/                                   &
     1x, 'DBG(symgetgroup) main order & mult.......:', 2i5/  &

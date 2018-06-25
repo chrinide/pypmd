@@ -29,11 +29,9 @@ subroutine infogeom ()
   ! threshold for degenerate principal moments of inertia
   real(kind=rp), parameter :: mom_thresh = 1e-3
 
-  real(kind=rp) :: mhz, cm1
   integer(kind=ip) :: i
   character(len=mline) :: moltype
   logical :: same12, same13, same23, onezero, allzero
-  logical :: iszero, degen
   
   !cm = cm*bohrtoa
   !cq = cq*bohrtoa
@@ -74,21 +72,6 @@ subroutine infogeom ()
     moltype = 'an asymmetric top'
   end if
   write (uout,'(1x,a,1x,a)') '# The molecule is', string(moltype)
-
-  !Calculate rotational frequencies in MHz and cm-1
-  do i = 1,3
-    iszero = are_same(emoi(i), 0.0_rp, mom_thresh)
-    if (i>1) then
-      degen = are_same(emoi(i-1), emoi(i), mom_thresh)
-    end if
-    if (iszero .or. degen) then
-      continue
-    end if
-    mhz = h/(8.0_rp*pi**2*emoi(i))
-    mhz = mhz * (1e10)**2 *na*1e-3
-    cm1 = mhz / c*1e6
-    write (uout, *) mhz, cm1
-  end do
 
 contains
 

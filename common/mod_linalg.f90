@@ -33,6 +33,15 @@ module mod_linalg
   !> public routines
   public :: jacobi
 
+  interface
+    subroutine dgeev(jobvl,jobvr,n,a,lda,wr,wi,vl,ldvl,vr,ldvr,work,lwork,info)
+      import :: rp, i4
+      character :: jobvl, jobvr
+      integer(kind=i4) :: info, lda, ldvl, ldvr, lwork, n
+      real(kind=rp) :: a(lda,*), vl(ldvl,*), vr(ldvr,*), wi(*), work(*), wr(*)
+    end subroutine
+  end interface
+
 contains
 
   ! Resolution of a symmetric eigenvalue equation 
@@ -254,5 +263,134 @@ contains
     end if
 
   end subroutine dassert_shape_1d
+
+  ! TODO: add optional switch for left or right eigenvectors
+  !subroutine deig(a, lam, c)
+  !
+  !  real(real), intent(in) :: a(:, :)     !< matrix for eigenvalue compuation
+  !  complex(real), intent(out) :: lam(:)  !< eigenvalues: a c = lam c
+  !  complex(real), intent(out) :: c(:, :) !< eigenvectors: a c = lam c; c(i,j) = ith component of jth vec.
+  !
+  !  ! lapack variables for dgeev:
+  !  real(real), allocatable ::  at(:,:), vl(:,: ), vr(:,:), wi(:), work(:), wr(:)
+  !  integer :: info, lda, ldvl, ldvr, lwork, n, i
+  !
+  !  lda = size(a(:,1))
+  !  n = size(a(1,:))
+  !  
+  !  ! check shape of matrix
+  !  !call assert_shape(a, [n, n], "solve", "a")
+  !  !call assert_shape(c, [n, n], "solve", "c")
+  !
+  !  ldvl = n
+  !  ldvr = n
+  !  lwork = 8*n  ! todo: can this size be optimized? query first?
+  !  allocate(at(lda,n), wr(n), wi(n), vl(ldvl,n), vr(ldvr,n), work(lwork))
+  !  at = a
+  !
+  !  call dgeev('n', 'v', n, at, lda, wr, wi, vl, ldvl, vr, ldvr, &
+  !       work, lwork, info)
+  !
+  !  if(info /= 0) then
+  !    write(uout,'(" # ")') 
+  !    write(uout,'(" # return info from dgeev",1(i2,x))') info
+  !    if (info < 0) then
+  !      write(uout,'(" # the argument number had an illegal value",1(i2,x))') -info
+  !    else
+  !      write(uout,'(" # the qr algorithm failed to compute all the eigenvalues")') 
+  !      write(uout,'(" # eigen values, and no eigenvectors have been computed")') 
+  !     end if
+  !     call error('mod_linalg','lapack dgeev error',faterr)
+  !     write(uout,'(" # ")') 
+  !  end if
+  !
+  !  lam = wr + i_* wi
+  !
+  !  ! as dgeev has a rather complicated way of returning the eigenvectors,
+  !  ! it is necessary to build the complex array of eigenvectors from
+  !  ! two real arrays:
+  !  do i = 1,n
+  !    if(wi(i) > 0.0) then  ! first of two conjugate eigenvalues
+  !      c(:, i) = vr(:, i) + i_*vr(:, i+1)
+  !    elseif(wi(i) < 0.0_real) then  ! second of two conjugate eigenvalues
+  !      c(:, i) = vr(:, i-1) - i_*vr(:, i)
+  !    else
+  !      c(:, i) = vr(:, i)
+  !    end if
+  !  end do
+  !
+  !end subroutine deig
+  !
+  !function deigvals(a) result(lam)
+  !
+  !  real(real), intent(in) :: a(:, :)    !< matrix for eigenvalue compuation
+  !  complex(real), allocatable :: lam(:) !< eigenvalues: a c = lam c
+  !
+  !  ! lapack variables for dgeev:
+  !  real(real), allocatable ::  at(:,:), vl(:,: ), vr(:,:), wi(:), work(:), wr(:)
+  !  integer :: info, lda, ldvl, ldvr, lwork, n
+  !
+  !  lda = size(a(:,1))
+  !  n = size(a(1,:))
+  !  !call assert_shape(a, [n, n], "solve", "a")
+  !  ldvl = n
+  !  ldvr = n
+  !  lwork = 8*n  ! todo: can this size be optimized? query first?
+  !  allocate(at(lda,n), wr(n), wi(n), vl(ldvl,n), vr(ldvr,n), work(lwork), lam(n))
+  !  at = a
+  !
+  !  call dgeev('n', 'n', n, at, lda, wr, wi, vl, ldvl, vr, ldvr, &
+  !       work, lwork, info)
+  !
+  !  if(info /= 0) then
+  !    write(uout,'(" # ")') 
+  !    write(uout,'(" # Return info from dgeev",1(I2,X))') info
+  !    if (info < 0) then
+  !      write(uout,'(" # The argument number had an illegal value",1(I2,X))') -info
+  !    else
+  !      write(uout,'(" # The qr algorithm failed to compute all the eigenvalues")') 
+  !      write(uout,'(" # Eigen values, and no eigenvectors have been computed")') 
+  !     end if
+  !     call error('mod_linalg','lapack dgeev error',faterr)
+  !     write(uout,'(" # ")') 
+  !  end if
+  !
+  !  lam = wr + i_*wi
+  !
+  !end function deigvals
+  !
+  !!> Returns the identity matrix of size n x n and type real.
+  !function eye(n) result(a)
+  !  integer, intent(in) :: n
+  !  real(real) :: a(n, n)
+  !  integer :: i
+  !  a = 0
+  !  do i = 1, n
+  !    a(i, i) = 1
+  !  end do
+  !end function eye
+  !
+  !!> Construct real matrix from diagonal elements
+  !function ddiag(x) result(a)
+  !  real(real), intent(in) :: x(:)
+  !  real(real), allocatable :: a(:,:)
+  !  integer :: i, n
+  !  n = size(x)
+  !  allocate(a(n,n))
+  !  a(:,:) = 0.0_real
+  !  forall(i=1:n) a(i,i) = x(i)
+  !end function ddiag
+  !
+  !!> Trace of a matrix
+  !!> return trace along the main diagonal
+  !function dtrace(a) result(t)
+  !  real(real), intent(in) :: a(:,:)
+  !  real(real) :: t
+  !  integer :: i
+  !  t = 0.0_real
+  !  do i = 1,minval(shape(a))
+  !    t = t + a(i,i)
+  !  end do
+  !end function dtrace
 
 end module
