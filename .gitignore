@@ -1,4 +1,3 @@
-external/
 *.o
 *.mod
 *.a
@@ -9,6 +8,8 @@ external/
 *.log
 *.pyc
 *.pmdout
+pmd
 promolden
 dosurf
 todo/
+*.sh

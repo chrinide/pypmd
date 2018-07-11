@@ -19,7 +19,6 @@
 module mod_odeint      
   
   use mod_prec, only: rp, ip
-  use mod_io, only: ferror, faterr, string
   implicit none
   private
 
@@ -27,7 +26,7 @@ module mod_odeint
 
 contains
 
-  subroutine odeint (ystart,h1,iup,inf,eps,xnuc,steeper)
+  subroutine odeint (ystart,h1,iup,inf,eps,xnuc,steeper,field,check)
  
     implicit none
 
@@ -47,24 +46,24 @@ contains
     real(kind=rp), intent(in) :: xnuc(3)
 
     interface
-      logical function  iscp (p,nuc)
-        import :: rp, ip
-        integer(kind=ip), intent(out) :: nuc
-        real(kind=rp), intent(in) :: p(3)
-      end function  iscp
-      subroutine pointr1 (p,rho,grad,gradmod)
+      subroutine field (p,rho,grad,gradmod)
         import rp
         real(kind=rp), intent(in) :: p(3)
         real(kind=rp), intent(out) :: grad(3)
         real(kind=rp), intent(out) :: rho
         real(kind=rp), intent(out) :: gradmod
       end subroutine
+      logical function  check (p,nuc)
+        import :: rp, ip
+        integer(kind=ip), intent(out) :: nuc
+        real(kind=rp), intent(in) :: p(3)
+      end function  
     end interface
 
   end subroutine
 
   ! Butcher table for Dormand-Prince method (ode45)
-  subroutine dop45 (y,dydx,h,yout,yerr)
+  subroutine dop45 (y,dydx,h,yout,yerr,field)
 
     implicit none
   
@@ -114,7 +113,7 @@ contains
     real(kind=rp) :: y4(3), y5(3)
    
     interface
-      subroutine pointr1 (p,rho,grad,gradmod)
+      subroutine field (p,rho,grad,gradmod)
         import rp
         real(kind=rp), intent(in) :: p(3)
         real(kind=rp), intent(out) :: grad(3)
@@ -123,31 +122,31 @@ contains
       end subroutine
     end interface
 
-    call pointr1 (y,rho,grad,gradmod)
+    call field (y,rho,grad,gradmod)
     ak1(:) = dydx(:)
     yout = y + h*b21*ak1
 
-    call pointr1 (yout,rho,grad,gradmod)
+    call field (yout,rho,grad,gradmod)
     ak2(:) = grad(:)
     yout = y + h*(b31*ak1+b32*ak2)
 
-    call pointr1 (yout,rho,grad,gradmod)
+    call field (yout,rho,grad,gradmod)
     ak3(:) = grad(:)
     yout = y + h*(b41*ak1+b42*ak2+b43*ak3)
 
-    call pointr1 (yout,rho,grad,gradmod)
+    call field (yout,rho,grad,gradmod)
     ak4(:) = grad(:)
     yout = y + h*(b51*ak1+b52*ak2+b53*ak3+b54*ak4)
 
-    call pointr1 (yout,rho,grad,gradmod)
+    call field (yout,rho,grad,gradmod)
     ak5(:) = grad(:)
     yout = y + h*(b61*ak1+b62*ak2+b63*ak3+b64*ak4+b65*ak5)
 
-    call pointr1 (yout,rho,grad,gradmod)
+    call field (yout,rho,grad,gradmod)
     ak6(:) = grad(:)
     yout = y + h*(b71*ak1+b73*ak3+b74*ak4+b75*ak5+b76*ak6)
 
-    call pointr1 (yout,rho,grad,gradmod)
+    call field (yout,rho,grad,gradmod)
     ak7(:) = grad(:)
 
     ! compute forth-order solution

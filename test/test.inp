@@ -5,7 +5,7 @@ wfn
   epsortho 1e-5
   rmaxatom 20.0
 endwfn
-load h2o_rhf.wfn
+load h2o_h2o_rhf.wfn
 #point 0.0 0.0 0.0
 geometry
 symmetry

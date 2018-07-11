@@ -32,27 +32,83 @@ module mod_param
   real(kind=rp), parameter :: deg2rad = pi/180.0_rp
 
   ! Enumerate for structure formats
-  logical :: isdata
   integer(kind=ip), parameter :: isformat_unknown = 0
   integer(kind=ip), parameter :: isformat_cube = 1
   integer(kind=ip), parameter :: isformat_crystal = 2 
   integer(kind=ip), parameter :: isformat_xyz = 3 
   integer(kind=ip), parameter :: isformat_wfn = 4 
   integer(kind=ip), parameter :: isformat_wfx = 5 
-  integer(kind=ip), parameter :: isformat_fchk = 6 
-  integer(kind=ip), parameter :: isformat_molden = 7 
 
   ! some options
   character(len=132) :: scratch
   logical :: verbose, debug
   
   real(kind=rp) :: d1mach_(5)
-  public :: d1mach
+  private :: d1mach
   real(kind=rp) :: vbig
   real(kind=rp) :: vsmall 
   real(kind=rp) :: epsreal
 
 contains
+
+  subroutine optsparam(var,val)
+
+    use iso_fortran_env, only: uout=>output_unit
+    use mod_io, only: equal, faterr, ferror, string
+    implicit none
+
+    character(len=*), intent(in) :: var
+    logical :: val
+
+    if (equal(var,'verbose')) then
+      verbose = val
+      write (uout,'(1x,a)') string('# *** Verbose mode is enabled')
+    else if (equal(var,'debug')) then
+      debug = val
+      verbose = val
+      write (uout,'(1x,a)') string('# *** Debug mode is enabled')
+    else
+      call ferror ('optsparam', 'unknown option', faterr)
+    end if
+
+  end subroutine optsparam
+
+  subroutine init_param ()
+
+    use iso_fortran_env, only: uout=>error_unit
+    use mod_io, only: string
+
+    implicit none
+    integer :: i, n, clock
+    integer, dimension(:), allocatable :: seed
+
+    scratch = './'
+    verbose = .false.
+    debug = .false.
+
+    ! random seed
+    call random_seed(size=n)
+    allocate(seed(n))
+    call system_clock(count=clock)
+    seed = clock + 37*(/(i-1, i =1,n)/)
+    call random_seed(put=seed)
+    deallocate(seed)
+
+    ! machine constants
+    do i = 1,5
+      d1mach_(i) = d1mach(i)
+    end do
+    vsmall = d1mach_(1)
+    vbig = d1mach_(2)
+    epsreal = epsilon(1.0_rp)
+
+    if (debug) then
+      write (uout,'(1x,a,1x,e13.6)') string('# (DEBUG) smallest number :'), vsmall
+      write (uout,'(1x,a,1x,e13.6)') string('# (DEBUG) biggest number :'), vbig
+      write (uout,'(1x,a,1x,e13.6)') string('# (DEBUG) machine eps :'), epsreal
+    end if
+
+  end subroutine init_param
 
   real(kind=rp) function d1mach (i)
   

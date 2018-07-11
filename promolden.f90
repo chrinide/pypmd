@@ -25,7 +25,10 @@ program promolden
                     isinteger, isreal, isword, ioinit, getline,  &
                     uin, mline, string, flush_unit, &
                     nwarns, ncomms, warning, lgetword
-  use mod_param, only: isdata
+  use mod_param, only: init_param, optsparam
+  use mod_wfn, only: init_wfn, end_wfn, optswfn, isdata, loadwfn
+  use mod_surf, only: init_surf, optssurf, surface
+  use mod_fields, only: pointr1
   implicit none
  
   character(len=:), allocatable :: optv !< command-line arguments 
@@ -40,16 +43,6 @@ program promolden
   integer(kind=ip) :: ival
   character(len=mline) :: vchar
   real(kind=rp) :: rval, rho, grad(3), gradmod, xpoint(3)
-
-  interface
-    subroutine optssurf(var,rval,ival)
-      import rp, ip
-      implicit none
-      character(len=*), intent(in) :: var
-      real(kind=rp), optional :: rval
-      integer(kind=ip), optional :: ival
-    end subroutine
-  end interface
 
   ! Begin program
   call ioinit ()
@@ -79,8 +72,6 @@ program promolden
 
   call init_param ()
   call init_wfn ()
-  call init_geom ()
-  call init_sym ()
   call init_surf ()
   
   ! Read the input file
@@ -103,28 +94,37 @@ program promolden
       ok = isreal(rval, line, lp)
       if (.not.ok) call ferror('promolden', 'wrong cuttz line', faterr) 
       call optswfn(word,rval)
-
+    
     else if (equal(word,'epsocc')) then
       ok = isreal(rval, line, lp)
       if (.not.ok) call ferror('promolden', 'wrong epsocc line', faterr) 
       call optswfn(word,rval)
-
+    
     else if (equal(word,'epsortho')) then
       ok = isreal(rval, line, lp)
       if (.not.ok) call ferror('promolden', 'wrong epsortho line', faterr) 
       call optswfn(word,rval)
-
+    
     else if (equal(word,'rmaxatom')) then
       ok = isreal(rval, line, lp)
       if (.not.ok) call ferror('promolden', 'wrong rmaxatom line', faterr) 
       call optswfn(word,rval)
-
+    
     else if (equal(word,'load')) then
       ok = isword(vchar, line, lp)
       if (.not.ok) call ferror('promolden', 'wrong load line', faterr) 
       call loadwfn(vchar)
       isdata = .true.
 
+    else if (equal(word,'unload')) then
+      if (isdata) then
+        call end_wfn ()
+        isdata = .false.
+      else        
+        call ferror('promolden', 'unload not data available', faterr)  
+      end if
+     
+    ! Field options
     else if (equal(word,'point')) then
       ok = isreal(xpoint(1), line, lp)
       ok = ok .and. isreal(xpoint(2), line, lp)
@@ -132,11 +132,11 @@ program promolden
       if (.not.ok) call ferror('promolden', 'wrong point line', faterr) 
       if (isdata) then
         call pointr1(xpoint,rho,grad,gradmod)
-        write (*,*) xpoint, rho, grad, gradmod
+        !write (*,*) xpoint, rho, grad, gradmod
       else
         call ferror('promolden', 'data not loaded', faterr) 
       end if
-
+     
     ! Surf options
     else if (equal(word,'steeper')) then
       ok = isinteger(ival, line, lp)
@@ -147,28 +147,28 @@ program promolden
       end if
       ival = abs(ival)
       call optssurf(word,ival=ival)
-
+    
     else if (equal(word,'epsiscp')) then
       ok = isreal(rval, line, lp)
       ok = ok .and. rval.ne.0.0_rp
       if (.not.ok) call ferror('promolden', 'wrong epsiscp line', faterr) 
       rval = abs(rval)
       call optssurf(word,rval=rval)
-
+    
     else if (equal(word,'epsilon')) then
       ok = isreal(rval, line, lp)
       ok = ok .and. rval.ne.0.0_rp
       if (.not.ok) call ferror('promolden', 'wrong epsilon line', faterr) 
       rval = abs(rval)
       call optssurf(word,rval=rval)
-
+    
     else if (equal(word,'rmaxsurf')) then
       ok = isreal(rval, line, lp)
       ok = ok .and. rval.ne.0.0_rp
       if (.not.ok) call ferror('promolden', 'wrong rmaxsurf line', faterr) 
       rval = abs(rval)
       call optssurf(word,rval=rval)
-
+    
     else if (equal(word,'ntrial')) then
       ok = isinteger(ival, line, lp)
       ok = ok .and. ival.ne.0_ip
@@ -176,7 +176,7 @@ program promolden
       ival = abs(ival)
       if (mod(ival,2).eq.0) ival = ival + 1_ip
       call optssurf(word,ival=ival)
-
+    
     else if (equal(word,'rprimer')) then
       ok = isreal(rval, line, lp)
       ok = ok .and. rval.ne.0.0_rp
@@ -184,20 +184,43 @@ program promolden
       rval = abs(rval)
       call optssurf(word,rval=rval)
     
-    ! Geometry analysis
-    else if (equal(word,'covx')) then
-      ok = isreal(rval, line, lp)
-      ok = ok .and. rval.ne.0.0_rp
-      if (.not.ok) call ferror('promolden', 'wrong covx line', faterr) 
-      rval = abs(rval)
-      call optsgeom(word,rval)
+    else if (equal(word,'surf')) then
+      ok = isinteger(ival, line, lp)
+      ok = ok .and. ival.ne.0_ip
+      if (.not.ok) call ferror('promolden', 'wrong surf line', faterr) 
+      ival = abs(ival)
+      if (isdata) then
+        call surface (ival)
+      else        
+        call ferror('promolden', 'surface not data available', faterr)  
+      end if
 
-    else if (equal(word,'geometry')) then
-      call loadgeom()
-
-    ! Symmetry analysis
-    else if (equal(word,'symmetry')) then
-      call loadsym()
+    !else if (equal(word,'agrid')) then
+    !  ok = isinteger(iqudt, line, lp)
+    !  ok = ok .and. isinteger(ntheta, line, lp)
+    !  ok = ok .and. isinteger(nphi, line, lp)
+    !  ok = ok .and. ntheta.ne.0_ip .and. nphi.ne.0_ip .and. iqudt.ne.0
+    !  if (.not.ok) call ferror('dosurf', 'wrong agrid line', faterr) 
+    !  iqudt = abs(iqudt)
+    !  ntheta = abs(ntheta)
+    !  nphi = abs(nphi)
+    !  nangleb(:,1) = 0
+    !  nangleb(:,2) = ntheta
+    !  nangleb(:,3) = nphi 
+    !  nangleb(:,4) = iqudt
+    !  write (uout,'(1x,a,3(1x,i0))') string('# *** Surface agrid (iqudt,ntheta,nphi) :'), iqudt, ntheta, nphi
+    !
+    !else if (equal(word,'lebedev')) then
+    !  ok = isinteger(npang, line, lp)
+    !  ok = ok .and. npang.ne.0_ip
+    !  if (.not.ok) call ferror('dosurf', 'wrong lebedev line', faterr) 
+    !  npang = abs(npang)
+    !  call good_lebedev (npang)
+    !  nangleb(:,1) = 1
+    !  nangleb(:,2) = npang
+    !  nangleb(:,3) = 0
+    !  nangleb(:,4) = 0
+    !  write (uout,'(1x,a,1x,i0)') string('# *** Surface lebedev changed to :'), npang
 
     ! End of input
     else if (equal(word,'end')) then
@@ -216,8 +239,7 @@ program promolden
   write (uout,'(1x,a)') string('#')
   call flush_unit (uout)
 
-  call end_wfn ()
-  call end_surf ()
+  if (isdata) call end_wfn ()
 
 1 call cpu_time (tiempo2)
   !$ tiempo2 = omp_get_wtime()

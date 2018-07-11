@@ -16,7 +16,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !
-module mod_futils
+module mod_utils
 
   implicit none
   private
@@ -87,7 +87,7 @@ contains
         if (pname(i)(1:8).ne.name(1:8)) then
           i = i + 1
           if (i.gt.mprocess) then
-            call ferror('mod_futils/timer', 'pid out of bonds', warning)
+            call ferror('mod_utils/timer', 'pid out of bonds', warning)
             return
           end if
           goto 15
@@ -106,9 +106,9 @@ contains
         pname(pid) = name
     else if (key.eq.3 .or. key.eq.4) then  ! end pid accounting: 
       if (pid.le.0 .or. pid.gt.mprocess) then
-         call ferror('mod_futils/timer', 'pid out of bonds', warning)
+         call ferror('mod_utils/timer', 'pid out of bonds', warning)
       else if (.not.popen(pid)) then
-         call ferror('mod_futils/timer', 'pid unused or closed', warning)
+         call ferror('mod_utils/timer', 'pid unused or closed', warning)
       else
         call cpu_time(timedum)
 !$      timedum = omp_get_wtime()
@@ -139,7 +139,7 @@ contains
       end do
       write (lw,115)
     else
-      call ferror('mod_futils/timer', 'key value not recognized', warning)
+      call ferror('mod_utils/timer', 'key value not recognized', warning)
     end if
  
 100 format (/' #------------------------------------',/'#*** timer:'/ &
@@ -238,4 +238,4 @@ contains
 
   end subroutine iqcksort
 
-end module mod_futils
+end module mod_utils

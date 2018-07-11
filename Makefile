@@ -3,40 +3,35 @@
 include make.inc
 
 all: promolden
-exe = promolden
-obj = promolden.o
+exe = pmd
+obj = mod_prec.o mod_io.o mod_param.o mod_utils.o mod_linalg.o \
+			mod_memory.o mod_datatm.o mod_wfn.o mod_fields.o mod_odeint.o \
+			mod_surf.o lebgrid.o promolden.o
 
-.SUFFIXES: .o .f90
+.SUFFIXES: .o .f90 .f
+
+%.o: %.F90
+	$(FC) -c $(FFLAGS) $(OPT) $(FDEBUG) -o $@ $<
 
 %.o: %.f90
-	$(FCOMPL) -Icommon -Iwfn -Isurf -Igeom -Isymm \
-  -c $(LDFLAG) $(FDEBUG) -o $@ $<
+	$(FC) -c $(FFLAGS) $(OPT) $(FDEBUG) -o $@ $<
 
-libcommon:
-	cd common/ && $(MAKE)
+%.o: %.f
+	$(FC) -c $(FFLAGS) $(OPT) $(FDEBUG) -o $@ $<
 
-libwfn:
-	cd wfn/ && $(MAKE)
-
-libgeom:
-	cd geom/ && $(MAKE)
-
-libsymm:
-	cd symm/ && $(MAKE)
-
-libsurf:
-	cd surf/ && $(MAKE)
-
-promolden: libcommon libwfn libgeom libsymm libsurf $(obj)
-	$(FCOMPL) $(LDFLAG) -o $(exe) $(obj) wfn/libwfn.a surf/libsurf.a \
-  geom/libgeom.a symm/libsymm.a common/libcommon.a
+promolden: $(obj)
+	$(FC) $(LDFLAG) -o $(exe) $(obj) 
 
 clean:
-	cd common && make clean
-	cd surf && make clean
-	cd wfn && make clean
-	cd geom && make clean
-	cd symm && make clean
 	@rm -f $(obj) *.mod $(exe)
 
-.PHONY: all promolden libcommon clean
+.PHONY: all promolden clean
+
+mod_surf.o mod_surf.mod : mod_fields.mod
+mod_wfn.o mod_wfn.mod : mod_linalg.mod
+mod_wfn.o mod_wfn.mod mod_surf.o mod_surf.mod : mod_memory.mod
+promolden.o promolden.mod mod_wfn.o mod_wfn.mod mod_surf.o mod_surf.mod mod_datatm.o mod_datatm.mod : mod_param.mod
+promolden.o promolden.mod mod_wfn.o mod_wfn.mod mod_utils.o mod_utils.mod mod_surf.o mod_surf.mod mod_param.o mod_param.mod mod_odeint.o mod_odeint.mod mod_memory.o mod_memory.mod mod_linalg.o mod_linalg.mod mod_fields.o mod_fields.mod mod_datatm.o mod_datatm.mod : mod_prec.mod
+promolden.o promolden.mod : mod_surf.mod
+promolden.o promolden.mod mod_surf.o mod_surf.mod mod_fields.o mod_fields.mod : mod_wfn.mod
+promolden.o promolden.mod mod_wfn.o mod_wfn.mod mod_utils.o mod_utils.mod mod_surf.o mod_surf.mod mod_param.o mod_param.mod mod_memory.o mod_memory.mod mod_linalg.o mod_linalg.mod : mod_io.mod
