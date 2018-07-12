@@ -1,4 +1,4 @@
-#verbose
+verbose
 wfn
   cuttz 1e-16
   epsocc 1e-16
