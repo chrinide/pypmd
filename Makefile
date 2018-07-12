@@ -6,7 +6,7 @@ all: promolden
 exe = pmd
 obj = mod_prec.o mod_io.o mod_param.o mod_utils.o mod_linalg.o \
 			mod_memory.o mod_datatm.o mod_wfn.o mod_fields.o mod_odeint.o \
-			mod_surf.o lebgrid.o promolden.o
+			mod_surf.o lebgrid.o quadratures.o mod_quad.o promolden.o
 
 .SUFFIXES: .o .f90 .f
 

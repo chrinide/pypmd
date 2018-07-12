@@ -48,8 +48,7 @@ module mod_surf
   real(kind=rp), public :: epsiscp
   ! NTRIAL  = number of sub-intervals in the search of the surface.
   ! RPRIMER = First point in the in the search of the surface.
-  ! GEOFAC  = ((rmaxsurf-0.1d0)/rprimer)**(1d0/(ntrial-1))
-  !           (RMAXSURF is defined in passed in integ.inc)
+  ! GEOFAC  = ((rmaxsurf-0.1)/rprimer)**(1.0/(ntrial-1))
   integer(kind=ip), public :: ntrial
   real(kind=rp), public :: rprimer
   real(kind=rp), public :: geofac
@@ -64,20 +63,21 @@ contains
     use iso_fortran_env, only: uout=>output_unit
     !$ use omp_lib, only: omp_get_wtime
     use mod_io, only: mline, fourchar, flush_unit, string
-    use mod_wfn, only: ncent
-    use mod_param, only: verbose
+    use mod_wfn, only: ncent, filename
+    use mod_param, only: verbose, pi
     use mod_memory, only: free, alloc
     implicit none
  
     integer(kind=ip), intent(in) :: nuc
  
-    character(len=mline) :: files
-    integer(kind=ip) :: lsu, ltxt, npang
-    real(kind=rp) :: time1, time2
+    character(len=4) :: d4
+    character(len=mline) :: filesurf
+    real(kind=rp) :: time1, time2, phi, delphi, rsurf(minter,2)
+    real(kind=rp) :: rmins, rmaxs, thang 
+    integer(kind=ip) :: lsu, ltxt, j, k, npang, nsurf, i, iqudt
+    integer(kind=ip) :: ntheta, nphi, it, ipp
     real(kind=rp), allocatable, dimension(:) :: ct, st, cp, sp, angw
     real(kind=rp), allocatable, dimension(:) :: tp, tw
-    !real(kind=rp) :: rsurf(minter,2)
-    character(len=4) :: d4
 
     interface
       subroutine lebgrid (ct,st,cp,sp,w,npoints)
@@ -92,114 +92,122 @@ contains
     end interface
       
     ! Init
-    if (verbose) call info_surf ()
     ltxt = 999
     lsu = 998
-    !files = trim(filename)//".surf"
-  
-    ! Find nucleus
+    filesurf = trim(filename)//".surf"
     call allocate_space_for_cp (ncent)
     call findnuc ()
+    inuc = nuc
+    xnuc(:) = xyzrho(inuc,:)
+    if (verbose) call info_surf ()
       
     ! Begin
     call flush_unit (uout)
-    inuc = nuc
     d4 = fourchar(inuc)
-    xnuc(:) = xyzrho(inuc,:)
     if (nangleb(1).eq.1_ip) then
       npang = nangleb(2)
       call good_lebedev (npang)
-      call alloc ('dosurface', 'ct', ct, npang)
-      call alloc ('dosurface', 'st', st, npang)
-      call alloc ('dosurface', 'cp', cp, npang)
-      call alloc ('dosurface', 'sp', sp, npang)
-      call alloc ('dosurface', 'angw', angw, npang)
+      call alloc ('surface', 'ct', ct, npang)
+      call alloc ('surface', 'st', st, npang)
+      call alloc ('surface', 'cp', cp, npang)
+      call alloc ('surface', 'sp', sp, npang)
+      call alloc ('surface', 'angw', angw, npang)
       call lebgrid (ct,st,cp,sp,angw,npang)
     else
-      !ntheta = nangleb(2)
-      !nphi = nangleb(3)
-      !iqudt = nangleb(4)
-      !npang = ntheta*nphi  
-      !call alloc ('dosurface', 'tp', tp, ntheta)
-      !call alloc ('dosurface', 'tw', tw, ntheta)
-      !call alloc ('dosurface', 'ct', ct, npang)
-      !call alloc ('dosurface', 'st', st, npang)
-      !call alloc ('dosurface', 'cp', cp, npang)
-      !call alloc ('dosurface', 'sp', sp, npang)
-      !call alloc ('dosurface', 'angw', angw, npang)
-      !call weightheta (iqudt,tp,tw,ntheta)
-      !delphi = 2.0_rp*pi/nphi
-      !i = 0_ip
-      !do ip = 0,nphi-1
-      !  phi = ip*delphi
-      !  do it = 1,ntheta
-      !    i = i + 1_ip
-      !    thang = tp(it)
-      !    ct(i) = thang
-      !    st(i) = sqrt(1.0_rp-thang*thang)
-      !    cp(i) = cos(phi)
-      !    sp(i) = sin(phi)
-      !    angw(i) = tw(it)*delphi
-      !  end do
-      !end do
-      !call free ('dosurface', 'tp', tp)
-      !call free ('dosurface', 'tw', tw)
+      ntheta = nangleb(2)
+      nphi = nangleb(3)
+      iqudt = nangleb(4)
+      npang = ntheta*nphi  
+      call alloc ('surface', 'tp', tp, ntheta)
+      call alloc ('surface', 'tw', tw, ntheta)
+      call alloc ('surface', 'ct', ct, npang)
+      call alloc ('surface', 'st', st, npang)
+      call alloc ('surface', 'cp', cp, npang)
+      call alloc ('surface', 'sp', sp, npang)
+      call alloc ('surface', 'angw', angw, npang)
+      call weightheta (iqudt,tp,tw,ntheta)
+      delphi = 2.0_rp*pi/nphi
+      i = 0_ip
+      do ipp = 0,nphi-1
+        phi = ipp*delphi
+        do it = 1,ntheta
+          i = i + 1_ip
+          thang = tp(it)
+          ct(i) = thang
+          st(i) = sqrt(1.0_rp-thang*thang)
+          cp(i) = cos(phi)
+          sp(i) = sin(phi)
+          angw(i) = tw(it)*delphi
+        end do
+      end do
+      call free ('surface', 'tp', tp)
+      call free ('surface', 'tw', tw)
     end if
+
     call allocate_space_for_surface (npang,minter)
     call cpu_time (time1)
     !$ time1 = omp_get_wtime()
-    !!$omp parallel default(none) &
-    !!$omp private(j,nsurf,rsurf) &
-    !!$omp shared(npang,ct,st,cp,sp,epsilon,rlimsurf,nlimsurf)
-    !!$omp do schedule(dynamic)
-    !do j = 1,npang
-    !  call surf (ct(j),st(j),cp(j),sp(j),rsurf,nsurf)
-    !  do k = 1,nsurf
-    !    rlimsurf(j,k) = rsurf(k,2)
-    !  end do
-    !  nlimsurf(j) = nsurf
-    !end do
-    !!$omp end do nowait
-    !!$omp end parallel
+    !$omp parallel default(none) &
+    !$omp private(j,nsurf,rsurf) &
+    !$omp shared(npang,ct,st,cp,sp,epsilon,rlimsurf,nlimsurf)
+    !$omp do schedule(dynamic)
+    do j = 1,npang
+      write (*,*) ct(j),st(j),cp(j),sp(j)
+      call ray (ct(j),st(j),cp(j),sp(j),rsurf,nsurf)
+      do k = 1,nsurf
+        rlimsurf(j,k) = rsurf(k,2)
+      end do
+      nlimsurf(j) = nsurf
+    end do
+    !$omp end do nowait
+    !$omp end parallel
     call cpu_time (time2)
     !$ time2 = omp_get_wtime()
     if (verbose) then
       write (uout,'(1x,a,1x,f12.5)') string('# Surface Elapsed seconds :'), time2-time1
     end if
-    !open (ltxt,file=trim(files)//"-txt"//d4)
-    !open (lsu,file=trim(files)//d4,form='unformatted')
-    !write (ltxt,1111) npang, inuc
-    !write (lsu) npang, inuc
-    !write (ltxt,3333) (nlimsurf(j),j=1,npang)
-    !write (ltxt,1090)
-    !write (lsu) (nlimsurf(j),j=1,npang)
-    !rmins = 1000_rp
-    !rmaxs = 0.0_rp
-    !do j = 1,npang
-    !  nsurf = nlimsurf(j)
-    !  rmins = min(rmins,rlimsurf(j,1))
-    !  rmaxs = max(rmaxs,rlimsurf(j,nsurf))
-    !  write (ltxt,2222) ct(j),st(j),cp(j),sp(j),angw(j),(rlimsurf(j,k),k=1,nsurf)
-    !  write (lsu) ct(j),st(j),cp(j),sp(j),angw(j),(rlimsurf(j,k),k=1,nsurf)
-    !end do
-    !write (ltxt,2222) rmins,rmaxs
-    !write (lsu) rmins,rmaxs
-    !close (ltxt)
-    !close (lsu)
-    call deallocate_space_for_surface ()
-    call free ('dosurface', 'ct', ct)
-    call free ('dosurface', 'ct', st)
-    call free ('dosurface', 'ct', cp)
-    call free ('dosurface', 'ct', sp)
-    call free ('dosurface', 'angw', angw)
 
-!1090 format (9x,'cos(theta)',13x,'sin(theta)',13x,'cos(phi)',15x,'sin(phi)',15x,'weight')
-!1111 format (2(1x,i5),' <--- (Angular points & Atom)')
-!3333 format (20(1x,i2),4x,'(Surface intersections)')
-!2222 format (15(1x,F22.15))
+    rmins = 1000_rp
+    rmaxs = 0.0_rp
+    open (lsu,file=trim(filesurf)//d4,form='unformatted')
+    if (verbose) open (ltxt,file=trim(filesurf)//"-txt"//d4)
+    write (lsu) npang, inuc
+    write (lsu) (nlimsurf(j),j=1,npang)
+    if (verbose) then
+      write (ltxt,111) npang, inuc
+      write (ltxt,333) (nlimsurf(j),j=1,npang)
+      write (ltxt,109)
+    end if
+    do j = 1,npang
+      nsurf = nlimsurf(j)
+      rmins = min(rmins,rlimsurf(j,1))
+      rmaxs = max(rmaxs,rlimsurf(j,nsurf))
+      if (verbose) then
+        write (ltxt,222) ct(j),st(j),cp(j),sp(j),angw(j),(rlimsurf(j,k),k=1,nsurf)
+      end if
+      write (lsu) ct(j),st(j),cp(j),sp(j),angw(j),(rlimsurf(j,k),k=1,nsurf)
+    end do
+    if (verbose) then
+      write (ltxt,222) rmins,rmaxs
+      close (ltxt)
+    end if
+    write (lsu) rmins,rmaxs
+    close (lsu)
+
+    call deallocate_space_for_surface ()
+    call free ('surface', 'ct', ct)
+    call free ('surface', 'ct', st)
+    call free ('surface', 'ct', cp)
+    call free ('surface', 'ct', sp)
+    call free ('surface', 'angw', angw)
 
     ! Deallocate all arrays
     call deallocate_space_for_cp ()
+
+109 format (9x,'cos(theta)',13x,'sin(theta)',13x,'cos(phi)',15x,'sin(phi)',15x,'weight')
+111 format (2(1x,i0),' <--- (Angular points & Atom)')
+333 format (20(1x,i0),4x,'(Surface intersections)')
+222 format (15(1x,f22.15))
 
   end subroutine surface
 
@@ -321,6 +329,10 @@ contains
       nsurf = nsurf + 1_ip
       rsurf(nsurf,2) = rmaxsurf
     end if
+    write (*,*) "# *********** ", nsurf
+    do i = 1,nsurf
+      write (*,*) "# *********** ", rsurf(i,2)
+    end do
  
   end subroutine
 
@@ -467,6 +479,32 @@ contains
 
   end function
 
+  ! Abscissas and weights for the theta quadrature. 
+  subroutine weightheta (iq,x,w,n)
+
+    use mod_io, only: ferror, faterr
+    implicit none
+
+    ! Arguments
+    integer(kind=ip), intent(in) :: iq, n
+    real(kind=rp), intent(out) :: x(n), w(n)
+
+    if (iq.eq.1) then ! Gauss-Legendre quadrature 
+      call gauleg (-1.0_rp,+1.0_rp,x,w,n)
+    else if (iq.eq.2) then ! Clenshaw-Curtis quadrature
+      call genclcu (-1.0_rp,+1.0_rp,x,w,n)
+    else if (iq.eq.3) then ! Gauss-Chebychev of first kind 
+      call chebyshev1 (x,w,n)
+    else if (iq.eq.4) then ! Gauss-Chebychev of second kind 
+      call chebyshev2 (x,w,n)
+    else if (iq.eq.5) then ! Perez-Jorda (Gauss-Chebychev, 2nd kind) quadrature. 
+      call pjt (x,w,n)
+    else
+      call ferror ('weightheta', 'bad theta quadrature', faterr)
+    end if
+ 
+  end subroutine
+
   subroutine optssurf(var,rval,ival)
 
     use iso_fortran_env, only: uout=>output_unit
@@ -576,33 +614,38 @@ contains
 
     use iso_fortran_env, only: uout=>output_unit
     use mod_io, only: string, mline
+    use mod_wfn, only: ncent, atnam, charge
     implicit none
 
     character(len=mline), dimension(5) :: rqudstr
     character(len=mline), dimension(5) :: ssteeper
+    integer(kind=ip) :: i
 
     rqudstr(1) = 'Gauss-Legendre'
-    !rqudstr(2) = 'Clenshaw-Curtis'
-    !rqudstr(3) = 'Gauss-Chebychev 1st kind'
-    !rqudstr(4) = 'Gauss-Chebychev 2nd kind'
-    !rqudstr(5) = 'Perez-Jorda (Gauss-Chebychev) 2nd kind'
+    rqudstr(2) = 'Clenshaw-Curtis'
+    rqudstr(3) = 'Gauss-Chebychev 1st kind'
+    rqudstr(4) = 'Gauss-Chebychev 2nd kind'
+    rqudstr(5) = 'Perez-Jorda (Gauss-Chebychev) 2nd kind'
 
-    !ssteeper(1) = 'Runge-Kutta-Cash-Karp'
-    !ssteeper(2) = 'Calvo-Montijano-Randez'
+    ssteeper(1) = 'Runge-Kutta-Cash-Karp'
+    ssteeper(2) = 'Calvo-Montijano-Randez'
     ssteeper(3) = 'Dormand-Prince method'
 
-    !format (1x,'# Assuming nuclei ',i0,' position: Check!')
+    atnam = adjustl(atnam)
+    write (uout,'(1x,a,1x)') string('# Positions of nuclear maxima')
+    do i = 1,ncent
+      write (uout,'(1x,a,1x,i0,1x,a,1x,f4.1,1x,3f12.6)') '#', i, &
+                    atnam(i)(1:2), charge(i), xyzrho(i,:)
+    end do
     write (uout,'(1x,a,1x,i0)') string('# Computing SURFACE for atom :'), inuc
-    write (uout,'(1x,a,1x,e13.6)') string('# Rmaxsur :'), rmaxsurf 
-    write (uout,'(1x,a,1x,a)') string('# Steeper ='), string(ssteeper(steeper))
+    write (uout,'(1x,a,1x,3f12.6)') string('# Nuclear center for atom :'), xnuc(:)
+    write (uout,'(1x,a,1x,e13.6)') string('# Rmaxsurf :'), rmaxsurf 
+    write (uout,'(1x,a,1x,a)') string('# Steeper :'), string(ssteeper(steeper))
     write (uout,'(1x,a,1x,e13.6)') string('# Surface precision :'), epsilon
     write (uout,'(1x,a,1x,e13.6)') string('# EPSISCP parameter :'), epsiscp
     write (uout,'(1x,a,1x,i0)') string('# Ntrial :'), ntrial
     write (uout,'(1x,a,1x,e13.6)') string('# Rprimer :'), rprimer
-    ! logical, allocatable, dimension(:), public :: lstart
-    ! integer(kind=ip), allocatable, dimension(:), public :: nrsearch
-    ! real(kind=rp), allocatable, dimension(:,:), public :: rstart
-    write (uout,'(1x,a)') string('# Angular Quadratures')
+    write (uout,'(1x,a)') string('# Angular Quadrature')
     if (nangleb(1).eq.1) then
       write (uout,'(1x,a,1x,i0,1x,a,1x,i0)') &
       string('# Atom'), inuc, string('lebedev points'), nangleb(2)

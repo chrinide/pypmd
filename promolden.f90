@@ -27,8 +27,8 @@ program promolden
                     nwarns, ncomms, warning, lgetword
   use mod_param, only: init_param, optsparam
   use mod_wfn, only: init_wfn, end_wfn, optswfn, isdata, loadwfn
-  use mod_surf, only: init_surf, optssurf, surface
-  use mod_fields, only: pointr1
+  use mod_surf, only: init_surf, optssurf, surface, nangleb
+  use mod_fields, only: pointr1, testpointr1
   implicit none
  
   character(len=:), allocatable :: optv !< command-line arguments 
@@ -42,7 +42,7 @@ program promolden
 
   integer(kind=ip) :: ival
   character(len=mline) :: vchar
-  real(kind=rp) :: rval, rho, grad(3), gradmod, xpoint(3)
+  real(kind=rp) :: rval, xpoint(3)
 
   ! Begin program
   call ioinit ()
@@ -125,14 +125,13 @@ program promolden
       end if
      
     ! Field options
-    else if (equal(word,'point')) then
+    else if (equal(word,'pointr1')) then
       ok = isreal(xpoint(1), line, lp)
       ok = ok .and. isreal(xpoint(2), line, lp)
       ok = ok .and. isreal(xpoint(3), line, lp)
       if (.not.ok) call ferror('promolden', 'wrong point line', faterr) 
       if (isdata) then
-        call pointr1(xpoint,rho,grad,gradmod)
-        !write (*,*) xpoint, rho, grad, gradmod
+        call testpointr1 (xpoint)
       else
         call ferror('promolden', 'data not loaded', faterr) 
       end if
@@ -184,43 +183,42 @@ program promolden
       rval = abs(rval)
       call optssurf(word,rval=rval)
     
-    else if (equal(word,'surf')) then
+    else if (equal(word,'agrid')) then
+      nangleb(1) = 0
+      ok = isinteger(ival, line, lp) .and. ival.ne.0
+      ival = abs(ival)
+      nangleb(4) = ival
+      if (.not.ok) call ferror('promolden', 'wrong agrid iqudt', faterr) 
+      ok = isinteger(ival, line, lp) .and. ival.ne.0
+      ival = abs(ival)
+      nangleb(2) = ival
+      if (.not.ok) call ferror('promolden', 'wrong agrid ntheta', faterr) 
+      ok = isinteger(ival, line, lp) .and. ival.ne.0
+      ival = abs(ival)
+      nangleb(3) = ival
+      if (.not.ok) call ferror('promolden', 'wrong agrid nphi', faterr) 
+
+    else if (equal(word,'lebedev')) then
       ok = isinteger(ival, line, lp)
       ok = ok .and. ival.ne.0_ip
-      if (.not.ok) call ferror('promolden', 'wrong surf line', faterr) 
+      if (.not.ok) call ferror('promolden', 'wrong agrid lebedev', faterr) 
+      ival = abs(ival)
+      call good_lebedev (ival)
+      nangleb(1) = 1
+      nangleb(2) = ival
+      nangleb(3) = 0
+      nangleb(4) = 0
+
+    else if (equal(word,'surface')) then
+      ok = isinteger(ival, line, lp)
+      ok = ok .and. ival.ne.0_ip
+      if (.not.ok) call ferror('promolden', 'wrong surface line', faterr) 
       ival = abs(ival)
       if (isdata) then
         call surface (ival)
       else        
         call ferror('promolden', 'surface not data available', faterr)  
       end if
-
-    !else if (equal(word,'agrid')) then
-    !  ok = isinteger(iqudt, line, lp)
-    !  ok = ok .and. isinteger(ntheta, line, lp)
-    !  ok = ok .and. isinteger(nphi, line, lp)
-    !  ok = ok .and. ntheta.ne.0_ip .and. nphi.ne.0_ip .and. iqudt.ne.0
-    !  if (.not.ok) call ferror('dosurf', 'wrong agrid line', faterr) 
-    !  iqudt = abs(iqudt)
-    !  ntheta = abs(ntheta)
-    !  nphi = abs(nphi)
-    !  nangleb(:,1) = 0
-    !  nangleb(:,2) = ntheta
-    !  nangleb(:,3) = nphi 
-    !  nangleb(:,4) = iqudt
-    !  write (uout,'(1x,a,3(1x,i0))') string('# *** Surface agrid (iqudt,ntheta,nphi) :'), iqudt, ntheta, nphi
-    !
-    !else if (equal(word,'lebedev')) then
-    !  ok = isinteger(npang, line, lp)
-    !  ok = ok .and. npang.ne.0_ip
-    !  if (.not.ok) call ferror('dosurf', 'wrong lebedev line', faterr) 
-    !  npang = abs(npang)
-    !  call good_lebedev (npang)
-    !  nangleb(:,1) = 1
-    !  nangleb(:,2) = npang
-    !  nangleb(:,3) = 0
-    !  nangleb(:,4) = 0
-    !  write (uout,'(1x,a,1x,i0)') string('# *** Surface lebedev changed to :'), npang
 
     ! End of input
     else if (equal(word,'end')) then

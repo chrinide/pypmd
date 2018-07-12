@@ -24,10 +24,10 @@ module mod_param
 
   ! global parameters
   real(kind=rp), parameter :: pi = 3.14159265358979323846264338328_rp
-  real(kind=rp), parameter :: h = 6.62606896d-34 !< Planck ct. [J.s] (nist2006)
+  real(kind=rp), parameter :: h = 6.62606896e-34 !< Planck ct. [J.s] (nist2006)
   real(kind=rp), parameter :: na = 6.02214179d23 !< Avogadro ct. [1/mol] (nist2006)
-  real(kind=rp), parameter :: bohrtoa = 0.52917720859d0 !< bohr to angstrom conversion factor
-  real(kind=rp), parameter :: c = 2.99792458d10 !< light speed [cm/s] (nist2006)
+  real(kind=rp), parameter :: bohrtoa = 0.52917720859_rp !< bohr to angstrom conversion factor
+  real(kind=rp), parameter :: c = 2.99792458e10 !< light speed [cm/s] (nist2006)
   real(kind=rp), parameter :: rad2deg = 180.0_rp/pi
   real(kind=rp), parameter :: deg2rad = pi/180.0_rp
 

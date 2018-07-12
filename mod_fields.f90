@@ -22,9 +22,33 @@ module mod_fields
   implicit none
   private
 
-  public :: pointr1
+  public :: pointr1, testpointr1
 
 contains
+        
+  subroutine testpointr1 (xpoint)
+
+    use iso_fortran_env, only: uout=>output_unit
+    use mod_param, only: verbose
+    use mod_io, only: string
+    implicit none
+
+    real(kind=rp), intent(in) :: xpoint(3)
+
+    real(kind=rp) :: rho, grad(3), gradmod
+
+    call pointr1 (xpoint,rho,grad,gradmod)
+   
+    if (verbose) then
+      write (uout,'(1x,a)') string('# --- Follow values for test pointr1 ---')
+      write (uout,'(1x,a,1x,3(1x,f0.8))') string('# Coordinates of point'), xpoint
+      write (uout,'(1x,a,1x,f0.8)')  string('# Density value'), rho
+      write (uout,'(1x,a,1x,3(1x,f0.8))') string('# Gradient value'), grad(:)
+      write (uout,'(1x,a,1x,f0.8)') string('# Gradmod value'), gradmod
+      write (uout,'(1x,a)') string('# --------------------------------------')
+    end if
+  
+  end subroutine
 
   ! Computes the spatial density and gradient at point p
   subroutine pointr1 (p,rho,grad,gradmod)

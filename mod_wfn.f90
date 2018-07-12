@@ -19,8 +19,11 @@
 module mod_wfn
   
   use mod_prec, only: ip, rp
+  use mod_io, only: mline
   implicit none
   public
+
+  character(len=mline) :: filename
 
   integer(kind=ip), parameter, private :: mgrp = 500_ip
   integer(kind=ip), parameter, private :: ngtoh = 21_ip
@@ -83,12 +86,14 @@ module mod_wfn
   
 contains
 
-  subroutine loadwfn(filename)
+  subroutine loadwfn(filedat)
 
     use mod_param, only: verbose
     implicit none
 
-    character(len=*), intent(in) :: filename
+    character(len=*), intent(in) :: filedat
+
+    filename = filedat
 
     call rdwfn (filename)
     call filtergto ()
@@ -510,7 +515,7 @@ contains
     epsocc = 1d-6
     epsortho = 1d-5
     cuttz = 1d-14
-    rmaxatom = 20d0
+    rmaxatom = 20.0
 
     !.p's
     nlm(2,1)=1      !px

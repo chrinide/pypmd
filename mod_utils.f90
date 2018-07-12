@@ -163,8 +163,8 @@ contains
     integer(kind=ip), intent(in) :: last  !< Last index
 
     integer(kind=ip), parameter :: m = 7, nstack = 100
-    real(kind=rp), parameter :: fm = 7875d0, fa = 211d0
-    real(kind=rp), parameter :: fc = 1663d0, fmi = 1.2698413d-4
+    real(kind=rp), parameter :: fm = 7875_rp, fa = 211_rp
+    real(kind=rp), parameter :: fc = 1663_rp, fmi = 1.2698413d-4
     real(kind=rp) :: fx
     integer(kind=ip) :: istack(nstack), jstack, l, ir, j, na, a, i, iq 
 

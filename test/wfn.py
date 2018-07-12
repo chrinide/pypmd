@@ -84,7 +84,7 @@ def read_rdm1(file1, norb):
 if __name__ == '__main__':
 
     import data # Almacenas los tipos de primitivas
-    name = 'n2_rhf.wfn'
+    name = 'h2o_rhf.wfn'
 
     title, symbols, numbers, coords, icen, ityp, oexp, \
     mo_count, mo_occ, mo_energy, mo_coeff = load_wfn(name)
