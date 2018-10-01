@@ -18,7 +18,6 @@
 !
 module mod_param
 
-  use mod_io, only: mline
   use mod_prec, only: rp, ip
   implicit none
   public
@@ -49,9 +48,6 @@ module mod_param
   real(kind=rp) :: vbig
   real(kind=rp) :: vsmall 
   real(kind=rp) :: epsreal
-  
-  logical :: isdata
-  character(len=mline) :: filename
 
 contains
 
@@ -72,14 +68,14 @@ contains
       verbose = val
       write (uout,'(1x,a)') string('# *** Debug mode is enabled')
     else
-      call ferror ('optsparam', trim(var)//' unknown option', faterr)
+      call ferror ('optsparam', 'unknown option', faterr)
     end if
 
   end subroutine optsparam
 
   subroutine init_param ()
 
-    use iso_fortran_env, only: uout=>output_unit
+    use iso_fortran_env, only: uout=>error_unit
     use mod_io, only: string
 
     implicit none
@@ -89,7 +85,6 @@ contains
     scratch = './'
     verbose = .false.
     debug = .false.
-    isdata = .false.
 
     ! random seed
     call random_seed(size=n)
@@ -108,9 +103,9 @@ contains
     epsreal = epsilon(1.0_rp)
 
     if (debug) then
-      write (uout,'(1x,a,1x,e13.6)') string('# (DEBUG) Smallest number :'), vsmall
-      write (uout,'(1x,a,1x,e13.6)') string('# (DEBUG) Biggest number :'), vbig
-      write (uout,'(1x,a,1x,e13.6)') string('# (DEBUG) Machine eps :'), epsreal
+      write (uout,'(1x,a,1x,e13.6)') string('# (DEBUG) smallest number :'), vsmall
+      write (uout,'(1x,a,1x,e13.6)') string('# (DEBUG) biggest number :'), vbig
+      write (uout,'(1x,a,1x,e13.6)') string('# (DEBUG) machine eps :'), epsreal
     end if
 
   end subroutine init_param

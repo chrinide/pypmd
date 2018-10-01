@@ -23,20 +23,25 @@ module mod_wfn
   implicit none
   public
 
+  character(len=mline) :: filename
+
   integer(kind=ip), parameter, private :: mgrp = 500_ip
   integer(kind=ip), parameter, private :: ngtoh = 21_ip
   integer(kind=ip), parameter, private :: maxtype = 56_ip
 
   ! nlm keeps the nlm values of x^n y^l z^m gaussian
   integer(kind=ip) :: nlm(maxtype,3)
+
   integer(kind=ip) :: nprims
   integer(kind=ip), private :: nprimsold
+  integer(kind=ip) :: ncore
   integer(kind=ip) :: nmo
   integer(kind=ip) :: ncent
   integer(kind=ip) :: maxgrp
   integer(kind=ip) :: numshells
 
-  real(kind=rp), allocatable, dimension(:,:) :: coeff
+  real(kind=rp), allocatable, dimension(:,:) :: coefcan
+  real(kind=rp), allocatable, dimension(:,:) :: coefnat
   integer(kind=ip), allocatable, dimension(:) :: npc
   integer(kind=ip), allocatable, dimension(:) :: ngroup
   integer(kind=ip), allocatable, dimension(:,:) :: icenat
@@ -47,28 +52,43 @@ module mod_wfn
   real(kind=rp), allocatable, dimension(:,:) :: rcutte
   real(kind=rp), allocatable, dimension(:,:) :: rint
   real(kind=rp), allocatable, dimension(:) :: occ
+  real(kind=rp), allocatable, dimension(:) :: eorb
   real(kind=rp), allocatable, dimension(:) :: charge
   character(len=8), allocatable, dimension(:) :: atnam
   integer(kind=ip), allocatable, dimension(:) :: icen
   integer(kind=ip), allocatable, dimension(:) :: ityp
   integer(kind=ip), allocatable, dimension(:,:):: iden
   integer(kind=ip), allocatable, dimension(:) :: nden
+
+  integer(kind=ip) :: nvirtual, noccupied
+  integer(kind=ip), allocatable, dimension(:) :: occupied
+  integer(kind=ip), allocatable, dimension(:) :: virtual
+  real(kind=rp), allocatable, dimension(:) :: occv
+
   integer(kind=ip), allocatable, dimension(:,:) :: ishell
   integer(kind=ip), allocatable, dimension(:) :: nshell
   integer(kind=ip), allocatable, dimension(:,:) :: atcenter
 
+  real(kind=rp), allocatable, dimension(:,:) :: c1et
+
+  logical :: ecp
+  logical :: rdm
+  logical :: isdata
   ! OPTIONS:
-  real(kind=rp) :: epscuttz
+  ! Any gaussian primitive and gaussian derivative will be assumed
+  ! to be zero if it is smaller than cuttz.
+  real(kind=rp) :: cuttz
+  real(kind=rp) :: epsocc
   real(kind=rp) :: rmaxatom
   real(kind=rp) :: epsortho
 
-  private :: etijcalc, gtogto
+  private :: etijcalc
   
 contains
 
   subroutine loadwfn(filedat)
 
-    use mod_param, only: verbose, filename
+    use mod_param, only: verbose
     implicit none
 
     character(len=*), intent(in) :: filedat
@@ -76,28 +96,36 @@ contains
     filename = filedat
 
     call rdwfn (filename)
-    call setupwfn ()
     call filtergto ()
     if (verbose) call infowfn ()
-    !call isorthowfn ()
+    call isorthowfn ()
 
   end subroutine loadwfn
 
   subroutine rdwfn (wfnfile)
 
     use mod_memory, only: alloc, free
-    use mod_io, only: ferror, faterr, udat, string, warning
+    use mod_io, only: ferror, faterr, mline, udat, string, warning
+    use mod_linalg, only: jacobi
     implicit none
  
     ! Arguments
     character(len=*), intent(in) :: wfnfile
  
     ! Local vars
-    real(kind=rp) :: tmp
-    integer(kind=ip) :: i, iwfn, j, k
+    integer(kind=ip) :: icounto, icountv
+    integer(kind=ip) :: i, icol, ifil, iwfn, j, k, nerr, nrot
+    real(kind=rp) :: cij, cji, dis, gamma, rho1val, tmp
+    real(kind=rp) :: tote, x1, x2, y1, y2, z1, z2
+    character(len=mline) :: rholine
     character(len=80) :: wfnttl
     character(len=4) :: mode
+    character(len=17) :: label
     character(len=8) :: check
+
+    ! Arrays needed in case of a given RDM
+    real(kind=rp), allocatable, dimension(:,:) :: v1mata
+    real(kind=rp), allocatable, dimension(:) :: d1mata
 
     ! Init data
     open (udat,file=wfnfile,status='old') 
@@ -107,6 +135,21 @@ contains
     call allocate_space_for_wfn ()
     do i = 1,ncent
       read (iwfn,103) atnam(i),j,(xyz(j,k),k=1,3),charge(j)
+    end do
+
+    ! Evaluate internuclear distances
+    do i = 1,ncent
+      x1 = xyz(i,1)
+      y1 = xyz(i,2)
+      z1 = xyz(i,3)
+      do j = 1,i
+        x2 = xyz(j,1)
+        y2 = xyz(j,2)
+        z2 = xyz(j,3)
+        dis = sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
+        rint(i,j) = dis
+        rint(j,i) = dis
+      end do
     end do
 
     ! Read 
@@ -119,17 +162,82 @@ contains
       end if
     end do
     do i = 1,nmo
-      read (iwfn,106) occ(i), tmp
+      read (iwfn,106) occ(i), eorb(i) 
       if (occ(i).lt.0.0_rp) then
         call ferror('rdwfn', 'nmo with negative occupation : '//string(i), warning)
       end if  
-      read (iwfn,107) (coeff(i,j),j=1,nprims)
+      read (iwfn,107) (coefcan(i,j),j=1,nprims)
     end do
     read (iwfn,108) check
     if (check .ne. 'END DATA') then
       call ferror('rdwfn', 'end card 1 not found', faterr)
     endif
 
+    ! Reduce and set info
+    call setupwfn ()
+    coefnat = coefcan
+
+    ! Special cases
+    read (iwfn,109) label,tote,gamma
+
+    ! RDM 
+    if (label(1:3).eq.'RDM') then
+      rdm = .true.
+      call allocate_space_for_rdm ()
+      call alloc ('rdwfn', 'v1mata', v1mata , nmo, nmo)
+      call alloc ('rdwfn', 'd1mata', d1mata , nmo)
+      open (57,file=trim(wfnfile)//".1rdm",status='old',iostat=nerr)
+      if (nerr.ne.0) then
+        call ferror('rdwfn', 'unable to open 1rdm file', faterr)
+      end if
+      read (57,'(a)') rholine
+      do
+        read (57,*,err=123) ifil, icol, rho1val
+        if (ifil.gt.nmo .or. icol.gt.nmo) then
+          call ferror('rdwfn', 'row and/or column > nmo', faterr)
+        else
+          c1et(ifil,icol) = rho1val
+        end if
+      end do
+123   close (57)
+      do i = 2,nmo
+        do j = 1,i-1
+          cij = c1et(i,j)
+          cji = c1et(j,i)
+          c1et(i,j) = 0.5_rp*(cij+cji)
+          c1et(j,i) = c1et(i,j)
+        end do
+      end do
+      ! Diagonalize total 1st-order matrix
+      call jacobi (c1et, d1mata, v1mata, nrot)
+      occ(1:nmo) = d1mata(1:nmo)
+      !TODO:change to matmult
+      do i = 1,nmo
+        do j = 1,nprims
+          tmp = 0.0_rp
+          do k = 1,nmo
+            tmp = tmp + v1mata(k,i)*coefcan(k,j)
+          end do
+          coefnat(i,j) = tmp
+        end do
+      end do
+      call free ('rdwfn', 'v1mata', v1mata)
+      call free ('rdwfn', 'd1mata', d1mata)
+    end if
+
+    noccupied = count(abs(occ)>epsocc)
+    nvirtual = nmo - noccupied
+    icountv = 0
+    icounto = 0
+    call allocate_space_for_rho ()
+    do i = 1,nmo
+      if (abs(occ(i))>epsocc) then
+        icounto = icounto + 1_ip
+        occupied(icounto) = i
+        occv(icounto) = occ(i)
+      end if
+    end do
+ 
     close (iwfn)
 
     ! formats
@@ -141,6 +249,7 @@ contains
 106 format (35x,f12.8,15x,f12.8)
 107 format (5e16.8)
 108 format (a8)
+109 format (a17,f20.12,18x,f13.8)
  
   end subroutine
 
@@ -167,11 +276,11 @@ contains
     icena(1) = icen(1)
     oexpa(1) = oexp(1)
     itypa(1) = ityp(1)
-    coefa(1:nmo,1) = coeff(1:nmo,1)
+    coefa(1:nmo,1) = coefcan(1:nmo,1)
     cyclej: do j= 2,nprims
       do m = 1,npa
         if (icen(j).eq.icena(m) .and. ityp(j).eq.itypa(m) .and. abs(oexp(j)-oexpa(m)).le.1d-10) then
-          coefa(1:nmo,m) = coefa(1:nmo,m)+coeff(1:nmo,j)
+          coefa(1:nmo,m) = coefa(1:nmo,m)+coefcan(1:nmo,j)
           cycle cyclej
         end if
       end do
@@ -179,7 +288,7 @@ contains
       icena(npa) = icen(j)
       oexpa(npa) = oexp(j)
       itypa(npa) = ityp(j)
-      coefa(1:nmo,npa) = coeff(1:nmo,j)
+      coefa(1:nmo,npa) = coefcan(1:nmo,j)
     end do cyclej
 
     ! Recompute the original variables
@@ -189,7 +298,7 @@ contains
       icen(j) = icena(j)
       oexp(j) = oexpa(j)
       ityp(j) = itypa(j)
-      coeff(1:nmo,j) = coefa(1:nmo,j)
+      coefcan(1:nmo,j) = coefa(1:nmo,j)
     end do
 
     ! Determine primitives corresponding to each center.
@@ -253,18 +362,20 @@ contains
           itypa(i) = itip
           oexpa(i) = alph
           icena(i) = icentro
-          coefa(1:nmo,i) = coeff(1:nmo,j)
+          coefa(1:nmo,i) = coefcan(1:nmo,j)
         enddo
       end do
     end do
   
-    call free ('setupwfn', 'coeff', coeff)
-    call alloc ('setupwfn', 'coeff', coeff, nmo, nprims)
+    call free ('setupwfn', 'coefnat', coefnat)
+    call free ('setupwfn', 'coefcan', coefcan)
+    call alloc ('setupwfn', 'coefnat', coefnat, nmo, nprims)
+    call alloc ('setupwfn', 'coefcan', coefcan, nmo, nprims)
     do i = 1,nprims
       ityp(i) = itypa(i)
       oexp(i) = oexpa(i)
       icen(i) = icena(i)
-      coeff(1:nmo,i) = coefa(1:nmo,i)
+      coefcan(1:nmo,i) = coefa(1:nmo,i)
     end do
    
     npcant = 0_ip
@@ -307,24 +418,9 @@ contains
 
     implicit none
 
+    real(kind=rp) :: dis, x1, xmax, zz
+    integer(kind=ip) :: ic, i, jc, lsum, m
     logical :: okcen
-    integer(kind=ip) :: j, ic, i, jc, lsum, m
-    real(kind=rp) :: dis, x1, x2, y1, y2, z1, z2, xmax, zz  
-
-    ! Evaluate internuclear distances
-    do i = 1,ncent
-      x1 = xyz(i,1)
-      y1 = xyz(i,2)
-      z1 = xyz(i,3)
-      do j = 1,i
-        x2 = xyz(j,1)
-        y2 = xyz(j,2)
-        z2 = xyz(j,3)
-        dis = sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
-        rint(i,j) = dis
-        rint(j,i) = dis
-      end do
-    end do
 
     ! Maximum distance at which it is necessary to compute a shell.
     do ic = 1,ncent
@@ -334,7 +430,7 @@ contains
         zz = oexp(i)
         x1 = 0.1_rp
         do 
-          if (x1**lsum*exp(-zz*x1*x1).le.abs(epscuttz)) exit
+          if (x1**lsum*exp(-zz*x1*x1).le.abs(cuttz)) exit
           x1 = x1 + 0.1_rp
         end do
         rcutte(ic,m) = x1
@@ -384,10 +480,15 @@ contains
     character(len=*), intent(in) :: var
     real(kind=rp) :: val
 
-    if (equal(var,'epscuttz')) then
-      epscuttz = abs(val)
+    if (equal(var,'cuttz')) then
+      cuttz = abs(val)
       if (verbose) then
-        write (uout,'(1x,a,1x,e13.6)') string('# *** Variable epscuttz changed to :'), epscuttz
+        write (uout,'(1x,a,1x,e13.6)') string('# *** Variable cuttz changed to :'), cuttz
+      end if
+    else if (equal(var,'epsocc')) then
+      epsocc = abs(val)
+      if (verbose) then
+        write (uout,'(1x,a,1x,e13.6)') string('# *** Variable epsocc changed to :'), epsocc
       end if
     else if (equal(var,'epsortho')) then
       epsortho = abs(val)
@@ -409,9 +510,12 @@ contains
                 
     implicit none
 
+    isdata = .false.
+    rdm = .false.
+    epsocc = 1d-6
     epsortho = 1d-5
-    epscuttz = 1d-14
-    rmaxatom = 12.0
+    cuttz = 1d-14
+    rmaxatom = 20.0
 
     !.p's
     nlm(2,1)=1      !px
@@ -576,6 +680,8 @@ contains
 
     call deallocate_space_for_wfn ()
     call deallocate_space_for_shells ()
+    call deallocate_space_for_rho ()
+    if (rdm) call deallocate_space_for_rdm ()
 
   end subroutine end_wfn
 
@@ -587,7 +693,8 @@ contains
 
     integer(kind=ip) :: ier
 
-    call alloc ('mod_wfn', 'coeff', coeff, nmo, nprims)
+    call alloc ('mod_wfn', 'coefcan', coefcan, nmo, nprims)
+    call alloc ('mod_wfn', 'coefnat', coefnat, nmo, nprims)
     call alloc ('mod_wfn', 'npc', npc, ncent)
     call alloc ('mod_wfn', 'ngroup', ngroup, ncent)
     call alloc ('mod_wfn', 'icenat', icenat, nprims, ncent)
@@ -600,6 +707,7 @@ contains
     call alloc ('mod_wfn', 'iden', iden, ncent, ncent)
     call alloc ('mod_wfn', 'nden', nden, ncent)
     call alloc ('mod_wfn', 'occ', occ, nmo)
+    call alloc ('mod_wfn', 'eorb', eorb, nmo)
     call alloc ('mod_wfn', 'charge', charge, ncent)
     call alloc ('mod_wfn', 'icen', icen, nprims)
     call alloc ('mod_wfn', 'ityp', ityp, nprims)
@@ -620,7 +728,8 @@ contains
 
     integer(kind=ip) :: ier
 
-    call free ('mod_wfn', 'coeff', coeff)
+    call free ('mod_wfn', 'coefcan', coefcan)
+    call free ('mod_wfn', 'coefnat', coefnat)
     call free ('mod_wfn', 'npc', npc)
     call free ('mod_wfn', 'ngroup', ngroup)
     call free ('mod_wfn', 'icenat', icenat)
@@ -633,6 +742,7 @@ contains
     call free ('mod_wfn', 'iden', iden)
     call free ('mod_wfn', 'nden', nden)
     call free ('mod_wfn', 'occ', occ)
+    call free ('mod_wfn', 'eorb', eorb)
     call free ('mod_wfn', 'charge', charge)
     call free ('mod_wfn', 'icen', icen)
     call free ('mod_wfn', 'ityp', ityp)
@@ -667,6 +777,44 @@ contains
 
   end subroutine deallocate_space_for_shells
 
+  subroutine allocate_space_for_rdm ()
+
+    use mod_memory, only: alloc
+    implicit none
+
+    call alloc ('mod_wfn', 'c1et', c1et, nmo, nmo)
+
+  end subroutine allocate_space_for_rdm
+                                                                        
+  subroutine deallocate_space_for_rdm ()
+
+    use mod_memory, only: free
+    implicit none
+
+    call free ('mod_wfn', 'c1et', c1et)
+
+  end subroutine deallocate_space_for_rdm
+
+  subroutine allocate_space_for_rho ()
+
+    use mod_memory, only: alloc
+    implicit none
+
+    call alloc ('mod_wfn', 'occv', occv, noccupied)
+    call alloc ('mod_wfn', 'occupied', occupied, noccupied)
+
+  end subroutine allocate_space_for_rho
+                                                                        
+  subroutine deallocate_space_for_rho ()
+
+    use mod_memory, only: free
+    implicit none
+
+    call free ('mod_wfn', 'occupied', occupied)
+    call free ('mod_wfn', 'occv', occv)
+
+  end subroutine deallocate_space_for_rho
+
   subroutine isorthowfn ()
 
     use iso_fortran_env, only: uout=>output_unit
@@ -685,12 +833,34 @@ contains
     call alloc ('isorthowfn', 'coeftmp', coeftmp , nmo, nprims)
     call gtogto (sprim)
  
-    if (verbose) then
-      write (uout,'(1x,a)') string('# Testing orthogonality of canonical MOs')
-    end if
+    if (verbose) write (uout,'(1x,a)') string('# Testing orthogonality of natural MOs')
+    coeftmp = matmul(sprim,transpose(coefnat))
+    overlap = matmul(coefnat,coeftmp)
     ortho = .true.
-    coeftmp = matmul(sprim,transpose(coeff))
-    overlap = matmul(coeff,coeftmp)
+    do i = 1,nmo
+      do j = 1,i
+        solap = overlap(i,j)
+        if (i.eq.j) then
+          if (abs(abs(solap)-1.0_rp) .gt. epsortho) then
+            ortho = .false.
+            if (debug) write (uout,222) i,solap
+          end if
+        else
+          if (abs(solap) .gt. epsortho) then
+            ortho = .false.
+            if (debug) write (uout,223) i,j,solap
+          end if
+        end if
+      end do 
+    end do
+    if (.not.ortho) then
+      call ferror ('isorthowfn', 'the set of natural mos are not orthonormal', warning)
+    end if
+
+    if (verbose) write (uout,'(1x,a)') string('# Testing orthogonality of canonical MOs')
+    ortho = .true.
+    coeftmp = matmul(sprim,transpose(coefcan))
+    overlap = matmul(coefcan,coeftmp)
     do i = 1,nmo
       do j = 1,i
         solap = overlap(i,j)
@@ -709,18 +879,14 @@ contains
     end do
     if (.not.ortho) then
       call ferror ('isorthowfn', 'the set of canonical mos are not orthonormal', warning)
-    else
-      if (verbose) then
-        write (uout,'(1x,a)') string('# Orthogonal canonical MOs')
-      end if
     end if
 
     call free ('isorthowfn', 'sprim', sprim)
     call free ('isorthowfn', 'overlap', overlap)
     call free ('isorthowfn', 'coeftmp', coeftmp)
 
-222 format (1x,'# MO number ',i0, ' is not exactly normalized, NORM = ', e19.12)
-223 format (1x,'# MOs ',i0,' and ',i0, ' are not exactly orthogonal, S = ', e19.12)
+222 format (1x,'# MO number ',i0, ' is not exactly normalized, NORM = ', e22.16)
+223 format (1x,'# MOs ',i0,' and ',i0, ' are not exactly orthogonal, S = ', e22.16)
 
   end subroutine isorthowfn
 
@@ -861,6 +1027,8 @@ contains
       wrout = .true.
     end if
 
+    write (uout,'(1x,a,1x,a)') string('# Load extermal RDM ? :'), string(rdm)
+    write (uout,'(1x,a,1x,a)') string('# Is ecp ? :'), string(ecp)
     write (uout,'(1x,a,1x,i0)') string('# Number of centers :'), ncent
     atnam = adjustl(atnam)
     do i = 1,ncent
@@ -868,7 +1036,7 @@ contains
                     atnam(i)(1:2), charge(i), xyz(i,:)
     end do
 
-    write (uout,'(1x,a,1x,e13.6)') string('# GTO eps :'), epscuttz
+    write (uout,'(1x,a,1x,e13.6)') string('# GTO eps :'), cuttz
     write (uout,'(1x,a,1x,i0)') string('# Original number of primitives :'), nprimsold
     write (uout,'(1x,a,1x,i0)') string('# Actual number of primitives :'), nprims
     write (uout,'(1x,a,1x,i0)') string('# Total number of shells :'), numshells
@@ -882,13 +1050,18 @@ contains
           i = nuexp(ic,m,1)
           lsum = nlm(ityp(i),1)+nlm(ityp(i),2)+nlm(ityp(i),3)
           lbl = lb(lsum)
-          write (uout,613) lbl,oexp(i),sqrt(rcutte(ic,m)),(nuexp(ic,m,k),k=1,nzexp(ic,m))
+          write (uout,613) lbl,oexp(i),rcutte(ic,m),(nuexp(ic,m,k),k=1,nzexp(ic,m))
         end do
       end do
     end if
 
     write (uout,'(1x,a,1x,e13.6)') string('# Orthogonality eps :'), epsortho
     write (uout,'(1x,a,1x,i0)') string('# Number of molecular orbitals :'), nmo
+    write (uout,'(1x,a,1x,e13.6)') string('# Occupied eps :'), epsocc
+    write (uout,'(1x,a,1x,i0)') string('# Number of occupied orbitals :'), noccupied
+    write (uout,*) string('#'), occupied(:)
+    write (uout,'(1x,a,1x,i0)') string('# Number of virtual orbitals :'), nvirtual
+    !if (debug) write (uout,*) string('#'), virtual(:)
 
 300 format (1x,'# ',i0,' shells contribute to the basin of center ',i0, &
      /,' # [ shell(atom) means shell number "shell" of atom "atom" ]')

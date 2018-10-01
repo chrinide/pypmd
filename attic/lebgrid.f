@@ -32,13 +32,8 @@ c
 
       integer(kind=ip) :: n, i
 
-      if (npts<6) then
-        npts = 14
-        return
-      end if
-      if (npts==6) return
       n = 0
-      do i = 1,size(lnpts)-1
+      do i = 1, size(lnpts)-1
         if (lnpts(i) < npts .and. npts <= lnpts(i+1)) then
           n = lnpts(i+1)
         end if

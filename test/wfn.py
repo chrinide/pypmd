@@ -220,6 +220,6 @@ if __name__ == '__main__':
 
     point = numpy.zeros(3)
     rho,grad,gradmod,hess,lap,king = density(point)
-    print rho, grad, gradmod
-    print hess, lap
-    print king
+    print "rho,grad,gradmod", rho, grad, gradmod
+    print "king,hess,lap", king, hess, lap
+              

@@ -28,6 +28,7 @@ module mod_io
   private :: string_char
   private :: string_logical
 
+  public :: fourchar
   public :: string
   public :: equal
   public :: getline
@@ -46,6 +47,7 @@ module mod_io
   public :: ioinit
   public :: fopen_read
   public :: fopen_write
+! public :: fopen_append
   public :: fopen_scratch
   public :: fclose
   public :: falloc
@@ -1059,6 +1061,34 @@ contains
 
   end function fopen_write
 
+  !> Open a file for appending
+! function fopen_append(file,form,abspath0) result(lu)
+!
+!   character(len=*), intent(in) :: file
+!   character(len=*), intent(in), optional :: form
+!   logical, intent(in), optional :: abspath0
+!   integer :: lu
+!   
+!   integer :: ios
+!   character(len=:), allocatable :: ofile
+!   logical :: abspath
+!
+!   abspath = .false.
+!   ofile = trim(adjustl(filepath)) // dirsep // file
+!   if (file(1:1) == dirsep) abspath = .true.
+!   if (present(abspath0)) abspath = abspath0
+!   if (abspath) ofile = file
+!
+!   lu = falloc()
+!   if (present(form)) then
+!      open(unit=lu,file=ofile,status='old',access='append',iostat=ios,form=form)
+!   else
+!      open(unit=lu,file=ofile,status='old',access='append',iostat=ios)
+!   end if
+!   if (ios /= 0) call ferror("fopen_append","error opening file: "//string(file),faterr)
+!
+! end function fopen_append
+
   !> Open a file for writing
   function fopen_scratch(form) result(lu)
 
@@ -1295,5 +1325,52 @@ contains
     end if
 
   end subroutine sectotime
+
+  character (len=4) function fourchar (i)
+  
+    integer :: i,i1,i2,i3,i4,i5,i6
+    character(len=1) :: digs(0:9)
+    data digs /'0','1','2','3','4','5','6','7','8','9'/
+
+    i1 = i/1000
+    i2 = mod(i,1000)
+    i3 = i2/100
+    i4 = mod(i2,100)
+    i5 = i4/10
+    i6 = mod(i4,10)
+    fourchar = digs(i1)//digs(i3)//digs(i5)//digs(i6)
+
+    return
+
+  end function
+      
+  ! get command line arguments and argument count
+  ! on return, argc will contain the number of arguments and
+  ! argv will be a character array containing the arguments.
+  subroutine getargs (argc, argv)
+
+    implicit none
+    integer :: argc
+    character(len=*) :: argv(*)
+
+    integer :: i
+    character(len=mline) :: line         !local string for parsing
+    integer :: length       !total length of command line
+
+    argc=0
+ 10 continue
+    call getarg (argc+1,line)
+    length=len_trim(line)
+    if (length.gt.0) then
+      argc=argc+1
+      if (argc.ge.3) return
+      argv(argc)=line(1:length)
+    endif
+    if (length.gt.0) goto 10
+    do i=1,argc
+      call getarg(i,argv(i))
+    end do
+      
+  end subroutine
 
 end module mod_io

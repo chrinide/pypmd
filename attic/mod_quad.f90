@@ -113,9 +113,9 @@ contains
           dvoln(n) = rad*(2.0_rp+eta)/den/den*r
         else
           dvoln(n) = 0.0_rp
-        endif
+        end if
         dvol(n) = dvoln(n)*r
-      enddo
+      end do
     else if (mapr.eq.2) then
       do n = 1,nr
         u = xr(n)
@@ -126,7 +126,7 @@ contains
           dvoln(n) = r*rad/den
         else
           dvoln(n) = 0.0_rp
-        endif
+        end if
         dvol(n) = dvoln(n)*r
       end do
     else if (mapr.eq.3) then

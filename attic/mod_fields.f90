@@ -40,7 +40,6 @@ contains
     call pointr1 (xpoint,rho,grad,gradmod)
    
     if (verbose) then
-      write (uout,'(1x,a)') string('# --------------------------------------')
       write (uout,'(1x,a)') string('# --- Follow values for test pointr1 ---')
       write (uout,'(1x,a,1x,3(1x,f0.8))') string('# Coordinates of point'), xpoint
       write (uout,'(1x,a,1x,f0.8)')  string('# Density value'), rho
@@ -54,8 +53,8 @@ contains
   ! Computes the spatial density and gradient at point p
   subroutine pointr1 (p,rho,grad,gradmod)
 
-    use mod_wfn, only: ncent, nlm, xyz, ityp, rcutte, occ, nmo, &
-                       oexp, ngroup, nuexp, nzexp, coeff
+    use mod_wfn, only: ncent, nlm, xyz, ityp, rcutte, occv, occupied, &
+                       oexp, ngroup, nuexp, nzexp, coefnat, noccupied 
     implicit none
  
     real(kind=rp), intent(in) :: p(3)
@@ -63,13 +62,16 @@ contains
     real(kind=rp), intent(out) :: rho
     real(kind=rp), intent(out) :: gradmod
   
-    integer(kind=ip) :: it(3), i, ic, itip, j, jj, k, m, n
+    integer(kind=ip) :: it(3), i, ic, itip, j, jj, k, m, n, idx
     real(kind=rp) :: aexp, cfj, dis2, dp2, f12, fc, x2
     real(kind=rp) :: f123, fa, fb , ori, x
     real(kind=rp) :: xcoor(3), fun(3), fun1(3), dp2x, dp2x2
-    real(kind=rp), dimension(nmo,3) :: gun1
-    real(kind=rp), dimension(nmo) :: gun
+    real(kind=rp), dimension(noccupied,3) :: gun1
+    real(kind=rp), dimension(noccupied) :: gun
  
+    it = 0_ip
+    fun = 0.0_rp
+    fun1 = 0.0_rp
     rho = 0.0_rp 
     grad = 0.0_rp
     gradmod = 0.0_rp
@@ -81,6 +83,7 @@ contains
       dis2 = xcoor(1)*xcoor(1) + xcoor(2)*xcoor(2) + xcoor(3)*xcoor(3)
       do m = 1,ngroup(ic)
         k = nuexp(ic,m,1)
+        !if (dis2.gt.rcutte(ic,m)*rcutte(ic,m)) goto 2
         if (dis2.gt.rcutte(ic,m)) goto 2
         ori = -oexp(k)
         dp2 = ori + ori
@@ -128,24 +131,28 @@ contains
           fa = fun1(1)*fun(2)*fun(3)*aexp
           fb = fun1(2)*fun(1)*fun(3)*aexp
           fc = fun1(3)*f12
-          do j = 1,nmo
-            cfj = coeff(j,i)
-            gun(j) = gun(j) + cfj*f123
-            gun1(j,1) = gun1(j,1) + cfj*fa
-            gun1(j,2) = gun1(j,2) + cfj*fb
-            gun1(j,3) = gun1(j,3) + cfj*fc
+          do j = 1,noccupied
+            idx = occupied(j) 
+            cfj = coefnat(idx,i)
+            gun(idx) = gun(idx) + cfj*f123
+            gun1(idx,1) = gun1(idx,1) + cfj*fa
+            gun1(idx,2) = gun1(idx,2) + cfj*fb
+            gun1(idx,3) = gun1(idx,3) + cfj*fc
           end do
         end do
 2      continue
       end do
     end do
   
-    rho = dot_product(occ,gun*gun)
-    grad(1) = dot_product(occ,gun*gun1(:,1))
-    grad(2) = dot_product(occ,gun*gun1(:,2))
-    grad(3) = dot_product(occ,gun*gun1(:,3))
+    rho = dot_product(occv,gun*gun)
+    grad(1) = dot_product(occv,gun*gun1(:,1))
+    grad(2) = dot_product(occv,gun*gun1(:,2))
+    grad(3) = dot_product(occv,gun*gun1(:,3))
+ 
     grad(:) = grad(:) + grad(:)
+    !gradmod = sqrt(grad(1)*grad(1)+grad(2)*grad(2)+grad(3)*grad(3))
     gradmod = norm2(grad)
+    !grad = grad/(gradmod+1e-16) !TODO:change by small machine number
  
   end subroutine
 
