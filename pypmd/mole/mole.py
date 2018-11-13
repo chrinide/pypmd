@@ -44,6 +44,14 @@ class Mole(lib.StreamObject):
         self.mo_coeff = None
         self.mo_occ = None
         self.mo_energy = None
+        self.numshells = None
+        self.maxgrp = None 
+        self.npc = None 
+        self.ngroup = None
+        self.icenat = None 
+        self.nzexp = None 
+        self.nuexp = None 
+        self.rcutte = None 
         self.natm = None
         self.coords = None
         self.charges = None
@@ -115,14 +123,14 @@ class Mole(lib.StreamObject):
             self.dump_input()
 
         newnprim = numpy.zeros(1, dtype=numpy.int32)
-        numshells = numpy.zeros(1, dtype=numpy.int32)
-        maxgrp = numpy.zeros(1, dtype=numpy.int32)
-        npc = numpy.zeros(self.natm, dtype=numpy.int32)
-        ngroup = numpy.zeros(self.natm, dtype=numpy.int32)
-        icenat = numpy.zeros((self.nprim,self.natm), dtype=numpy.int32)
-        nzexp = numpy.zeros((MGRP,self.natm), dtype=numpy.int32) 
-        nuexp = numpy.zeros((NGTOH,MGRP,self.natm), dtype=numpy.int32)  
-        rcutte = numpy.zeros((MGRP,self.natm), dtype=numpy.float64)  
+        self.numshells = numpy.zeros(1, dtype=numpy.int32)
+        self.maxgrp = numpy.zeros(1, dtype=numpy.int32)
+        self.npc = numpy.zeros(self.natm, dtype=numpy.int32)
+        self.ngroup = numpy.zeros(self.natm, dtype=numpy.int32)
+        self.icenat = numpy.zeros((self.nprim,self.natm), dtype=numpy.int32)
+        self.nzexp = numpy.zeros((MGRP,self.natm), dtype=numpy.int32) 
+        self.nuexp = numpy.zeros((NGTOH,MGRP,self.natm), dtype=numpy.int32)  
+        self.rcutte = numpy.zeros((MGRP,self.natm), dtype=numpy.float64)  
     
         libwfn.wfn_driver(ctypes.c_double(self.epscuttz),  
                           ctypes.c_double(self.rmaxatom),  
@@ -137,19 +145,22 @@ class Mole(lib.StreamObject):
                           self.coords.ctypes.data_as(ctypes.c_void_p), 
                           self.charges.ctypes.data_as(ctypes.c_void_p),
                           newnprim.ctypes.data_as(ctypes.c_void_p),
-                          maxgrp.ctypes.data_as(ctypes.c_void_p),
-                          numshells.ctypes.data_as(ctypes.c_void_p),
-                          npc.ctypes.data_as(ctypes.c_void_p),
-                          ngroup.ctypes.data_as(ctypes.c_void_p),
-                          icenat.ctypes.data_as(ctypes.c_void_p),
-                          nzexp.ctypes.data_as(ctypes.c_void_p),
-                          nuexp.ctypes.data_as(ctypes.c_void_p),
-                          rcutte.ctypes.data_as(ctypes.c_void_p))
+                          self.maxgrp.ctypes.data_as(ctypes.c_void_p),
+                          self.numshells.ctypes.data_as(ctypes.c_void_p),
+                          self.npc.ctypes.data_as(ctypes.c_void_p),
+                          self.ngroup.ctypes.data_as(ctypes.c_void_p),
+                          self.icenat.ctypes.data_as(ctypes.c_void_p),
+                          self.nzexp.ctypes.data_as(ctypes.c_void_p),
+                          self.nuexp.ctypes.data_as(ctypes.c_void_p),
+                          self.rcutte.ctypes.data_as(ctypes.c_void_p))
 
+        self.maxgrp = self.maxgrp[0]
+        self.numshells = self.numshells[0]
+        self.nprim = newnprim[0]
         logger.timer(self,'Mol and wfn info build', t0)
-        #print newnprim, maxgrp, numshells
-        #print "npc", npc
-        #print "ngroup", ngroup
+        #print self.nprim, self.maxgrp, self.numshells
+        #print "npc", self.npc
+        #print "ngroup", self.ngroup
         #for j in range(self.natm):
         #    for i in range(npc[j]):
         #        print icenat[i,j]
@@ -160,9 +171,9 @@ class Mole(lib.StreamObject):
         #    for i in range(ngroup[j]):
         #        for k in range(nzexp[i,j]):
         #            print nuexp[k,i,j]
-        for j in range(self.natm):
-            for i in range(ngroup[j]):
-                print rcutte[i,j]
+        #for j in range(self.natm):
+        #    for i in range(self.ngroup[j]):
+        #        print self.rcutte[i,j]
 
         return self
 

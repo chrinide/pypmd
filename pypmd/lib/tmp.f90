@@ -55,6 +55,7 @@
 
   end subroutine isorthowfn
 
+
   ! Overlap matrix between primitive Cartesian Gaussian Functions
   subroutine gtogto (sprim)
 
@@ -62,7 +63,7 @@
     implicit none
     integer(kind=ip), parameter :: lamx = 12
  
-    real(kind=rp), intent(out) :: sprim(nprims,nprims)
+    real(kind=rp), intent(out) :: sprim(nprims_,nprims_)
  
     real(kind=rp), dimension(ncent,ncent) :: ab2
     real(kind=rp) :: ax(1:3), bx(1:3), za, zb, p, pioverp, abaux
