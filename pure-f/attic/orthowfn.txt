@@ -1,0 +1,147 @@
+c
+c-----------------------------------------------------------------------
+c
+      SUBROUTINE orthowfn (largwr)
+c
+c-----------------------------------------------------------------------
+c     This routine orthogonalizes the full set of natural MO's by the
+c     symmetric Lowdin method.
+c-----------------------------------------------------------------------
+c
+
+      USE                space_for_wfnbasis
+      USE                space_for_wfncoef
+      include           'implicit.inc'
+      include           'param.inc'
+      include           'io.inc'
+      include           'wfn.inc'
+C
+c.....local variables
+c
+      real(kind=8),  allocatable,dimension (:,:) :: sprim,cp,uvec,smo
+      real(kind=8),  allocatable,dimension (:)   :: diag,ortho
+      real(kind=8)   ax(3),bx(3)
+      integer  it(3),jt(3)
+      logical  largwr
+c
+      call timer (2,iowfn,'_orthowfn_',-1)
+c
+c.....allocate arrays.
+c
+      allocate (sprim(nprims,nprims),stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot allocate sprim() array'
+      allocate (cp(nprims,nmo),stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot allocate cp() array'
+      allocate (uvec(nmo,nmo),stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot allocate uvec() array'
+      allocate (smo(nmo,nmo),stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot allocate smo() array'
+      allocate (diag(nmo),stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot allocate diag() array'
+      allocate (ortho(nmo),stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot allocate ortho() array'
+c
+c.....Compute overlaps between cartesian GTO's.
+c
+      call gtogto (sprim)
+c
+c.....Compute overlaps between cartesian GTO's.
+c
+      write (uout,*) '#'
+      write (uout,*) '# Orthogonalize MOs'
+      write (uout,*) '#'
+c
+c.....Overlap matrix between doubly occupied MO's
+c
+      if (largwr) write (uout,*) '# Overlap matrix betwen MOs'
+      do i=1,nmo
+        do j=1,i
+           solap=0d0
+           do ma=1,nprims
+              do mb=1,nprims
+                prodc=coef(i,ma)*coef(j,mb)
+                solap=solap+prodc*sprim(ma,mb)
+              enddo
+           enddo
+           smo(i,j)=solap
+           smo(j,i)=solap
+        enddo
+        if (largwr) write (uout,'(10(1x,F12.6))')(smo(i,j),j=1,i)
+      enddo
+c
+c.....diagonalize overlap matrix between doubly occupied MO's.
+c
+      call jacobi (smo,nmo,nmo,diag,uvec,nrot)
+      if (largwr) then
+        write (uout,*)
+        write (uout,*) '# Eigenvalues are ===> '
+        write (uout,'(10(1x,F12.6))')(diag(i),i=1,nmo)
+      endif
+      do i=1,nmo
+        if (diag(i).le.0d0) then
+          stop 'fragwfn2: Overlap matrix is not definite positive'
+        endif
+        diag(i)=1d0/sqrt(diag(i))
+      enddo
+c
+      do i=1,nprims
+         do j=1,nmo
+           add=0d0
+           do k=1,nmo
+             do l=1,nmo
+               add=add+coef(k,i)*uvec(k,l)*uvec(j,l)*diag(l)
+             enddo
+           enddo
+           cp(i,j)=add
+         enddo
+      enddo
+c
+c.....Renormalize MO's
+c
+      do i=1,nmo
+        solap=0d0
+        do ma=1,nprims
+          do mb=1,nprims
+            solap=solap+cp(ma,i)*cp(mb,i)*sprim(ma,mb)
+          enddo
+        enddo
+        solap=1d0/sqrt(solap)
+        do ma=1,nprims
+           cp(ma,i)=cp(ma,i)*solap
+           coef(i,ma)=cp(ma,i)
+        enddo
+      enddo
+c
+c.....Test orthogonality of the new MO's
+c
+*     write (uout,*)
+      write (uout,*) '# Orthogonality test for MOs'
+      do k=1,nmo
+        do l=1,k
+          ortho(l)=0d0
+          do ma=1,nprims
+            do mb=1,nprims
+              ortho(l)=ortho(l)+coef(k,ma)*coef(l,mb)*sprim(ma,mb)
+            enddo
+          enddo
+        enddo
+*       write (uout,'(10(1x,F12.6))') (ortho(l),l=1,k)
+      enddo
+c
+c.....deallocate arrays.
+c
+      deallocate (sprim,stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot deallocate sprim() array'
+      deallocate (cp,stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot deallocate cp() array'
+      deallocate (uvec,stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot deallocate uvec() array'
+      deallocate (smo,stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot deallocate smo() array'
+      deallocate (diag,stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot deallocate diag() array'
+      deallocate (ortho,stat=ier)
+      if (ier.ne.0) stop 'orthowfn: Cannot deallocate ortho() array'
+      call timer (4,iowfn,'_orthowfn_',-1)
+      return
+      end

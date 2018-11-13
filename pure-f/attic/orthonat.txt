@@ -1,0 +1,161 @@
+c
+c-----------------------------------------------------------------------
+c
+      SUBROUTINE orthonat (nat,largwr)
+c
+c-----------------------------------------------------------------------
+c     This routine orthogonalizes the full set of natural (nat=0) or
+c     canonical (nat=nmo) MO's by the symmetric Lowdin method.
+c-----------------------------------------------------------------------
+c
+
+      USE                space_for_wfnbasis
+      USE                space_for_wfncoef
+      include           'implicit.inc'
+      include           'param.inc'
+      include           'io.inc'
+      include           'wfn.inc'
+C
+c.....local variables
+c
+      real(kind=8),  allocatable,dimension (:,:) :: sprim,cp,uvec,smo
+      real(kind=8),  allocatable,dimension (:)   :: diag,ortho
+      real(kind=8), allocatable,dimension(:)     :: work
+      real(kind=8)   ax(3),bx(3)
+      integer  it(3),jt(3)
+      logical  largwr
+c
+      call timer (2,iowfn,'_orthonat ',-1)
+c
+c.....allocate arrays.
+c
+      if (nat.eq.0) then
+        write (uout,*) '#'
+        write (uout,*) '# Orthogonalizing Natural MOs'
+        write (uout,*) '#'
+      elseif (nat.eq.nmo) then
+        write (uout,*) '#'
+        write (uout,*) '# Orthogonalizing Canonical MOs'
+        write (uout,*) '#'
+      else
+        stop 'orthonat.f: NAT input parameter is neither 0 or NMO'
+      endif
+      allocate (sprim(nprims,nprims),stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot allocate sprim() array'
+      allocate (cp(nprims,nmo),stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot allocate cp() array'
+      allocate (uvec(nmo,nmo),stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot allocate uvec() array'
+      allocate (smo(nmo,nmo),stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot allocate smo() array'
+      allocate (diag(nmo),stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot allocate diag() array'
+      allocate (ortho(nmo),stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot allocate ortho() array'
+c
+c.....Compute overlaps between cartesian GTO's.
+c
+      call gtogto (sprim)
+c
+c.....Overlap matrix between doubly occupied MO's
+c
+      if (largwr) write (uout,*) '# Overlap matrix betwen MOs'
+      do i=1,nmo
+        do j=1,i
+           solap=0d0
+           do ma=1,nprims
+              do mb=1,nprims
+                prodc=coef(i+nat,ma)*coef(j+nat,mb)
+                solap=solap+prodc*sprim(ma,mb)
+              enddo
+           enddo
+           smo(i,j)=solap
+           smo(j,i)=solap
+        enddo
+        if (largwr) write (uout,'(6(1x,F16.10))')(smo(i,j),j=1,i)
+      enddo
+c
+c.....diagonalize overlap matrix between doubly occupied MO's.
+c
+*     n3=nmo+nmo+nmo-1
+*     if (.not.allocated(work)) then
+*       allocate (work(n3),stat=ier)
+*       if (ier.ne.0) stop 'orthonat.f: Cannot allocate work()'
+*     endif
+*     uvec=smo
+*     call dsyev ('V','L',nmo,uvec,nmo,diag,work,n3,info)
+      call jacobi (smo,nmo,nmo,diag,uvec,nrot)
+      if (largwr) then
+        write (uout,*)
+        write (uout,*) '# Eigenvalues are ===> '
+        write (uout,'(6(1x,F16.10))')(diag(i),i=1,nmo)
+      endif
+      do i=1,nmo
+        if (diag(i).le.0d0) then
+          stop 'orthonat.f.f: Overlap matrix is not definite positive'
+        endif
+        diag(i)=1d0/sqrt(diag(i))
+      enddo
+c
+      do i=1,nprims
+         do j=1,nmo
+           add=0d0
+           do k=1,nmo
+             do l=1,nmo
+               add=add+coef(k+nat,i)*uvec(k,l)*uvec(j,l)*diag(l)
+             enddo
+           enddo
+           cp(i,j)=add
+         enddo
+      enddo
+c
+c.....Renormalize MO's
+c
+      do i=1,nmo
+        solap=0d0
+        do ma=1,nprims
+          do mb=1,nprims
+            solap=solap+cp(ma,i)*cp(mb,i)*sprim(ma,mb)
+          enddo
+        enddo
+        solap=1d0/sqrt(solap)
+        do ma=1,nprims
+           cp(ma,i)=cp(ma,i)*solap
+           coef(i+nat,ma)=cp(ma,i)
+        enddo
+      enddo
+c
+c.....Test orthogonality of the new MO's
+c
+      write (uout,*)
+      write (uout,*) '# Orthogonality test for MOs'
+      do k=1,nmo
+        do l=1,k
+          tmp=0d0
+          do ma=1,nprims
+            do mb=1,nprims
+              tmp=tmp+coef(k+nat,ma)*coef(l+nat,mb)*sprim(ma,mb)
+            enddo
+          enddo
+          ortho(l)=tmp
+        enddo
+        write (uout,'(6(1x,F16.10))') (ortho(l),l=1,k)
+      enddo
+c
+c.....deallocate arrays.
+c
+      deallocate (sprim,stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot deallocate sprim() array'
+      deallocate (cp,stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot deallocate cp() array'
+      deallocate (uvec,stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot deallocate uvec() array'
+      deallocate (smo,stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot deallocate smo() array'
+      deallocate (diag,stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot deallocate diag() array'
+      deallocate (ortho,stat=ier)
+      if (ier.ne.0) stop 'orthonat.f: Cannot deallocate ortho() array'
+      call timer (4,iowfn,'_orthonat ',-1)
+      return
+      end

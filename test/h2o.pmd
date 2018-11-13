@@ -1,7 +1,0 @@
-verbose
-load h2o.wfn
-testrho
-grid
-  lebedev 5810
-endgrid
-surface 1

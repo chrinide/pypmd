@@ -1,0 +1,23 @@
+Contributors to the xprom code:
+
+* Jose Luis Casals Sainz at the University of Oviedo
+  <joseluiscasalssainz@gmail.com>:
+  Clean and rewrite the original code of Evelio and
+  Ángel Martín Pendás
+
+* Evelio Francisco Miguelez at the University of Oviedo
+  <evelio@uniovi.es>:
+  Author of the original program
+
+* Ángel Martín Pendás at the University of Oviedo
+  <angel@fluor.quimica.uniovi.es>:
+  Author of the original program
+
+* Alberto Otero de la Roza at the University of Oviedo
+  <evelio@uniovi.es>:
+  Author of the original mod_io.F90 module
+
+* Victor Luaña Cabal at the University of Oviedo
+  <victor@fluor.quimica.uniovi.es>:
+  Author of the symmetry routines
+

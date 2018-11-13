@@ -2,14 +2,5 @@
 *.mod
 *.a
 *.so
-*.txt
-*.out
-*.mol
-*.log
 *.pyc
-*.pmdout
-pmd
-promolden
-dosurf
-todo/
-*.sh
+tmp/
