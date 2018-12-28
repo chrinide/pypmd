@@ -397,7 +397,7 @@ if __name__ == '__main__':
     surf.epsroot = 1e-5
     surf.verbose = 4
     surf.epsiscp = 0.220
-    surf.mstep = 220
+    surf.mstep = 120
     surf.inuc = 0
     surf.npang = 5810
     surf.kernel()

@@ -174,7 +174,6 @@ subroutine surf (cot,sit,cop,sip,rsurf,nsurf)
     nsurf = nsurf + 1_ip
     rsurf(nsurf,2) = rmaxsurf_
   end if
-  !write (*,*) cot,sit,cop,sip,nsurf,rsurf(1:nsurf,2)
  
 end subroutine
 
@@ -235,7 +234,6 @@ end subroutine
       if ((x-x2)*(x2-x1).ge.0.0_rp .or. iscp(y,nuc)) then
         ystart(:) = y(:)
         return
-        !write (*,*) y
       end if
       if (abs(hnext).lt.hmin) then
         call ferror ('mod_surface/odeint', 'stepsize small than minimum', faterr)
