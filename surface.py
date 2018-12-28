@@ -5,20 +5,22 @@ import h5py
 import time
 import numpy
 import ctypes
+import signal
 
 import data
 import misc
 import param
 import grids
 import logger
-
-
-libfapi = misc.load_library('libfapi')
-
+import chkfile
 
 # For code compatiblity in python-2 and python-3
 if sys.version_info >= (3,):
     unicode = str
+
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+libfapi = misc.load_library('libfapi')
 
 
 def rho_grad(self,point):
@@ -175,7 +177,7 @@ class BaderSurf(object):
         self.backend = 'rkck'
         self.epsilon = 1e-4 
         self.step = 0.1
-        self.mstep = 100
+        self.mstep = 500
 ##################################################
 # don't modify the following attributes, they are not input options
         self.xnuc = None
@@ -311,7 +313,7 @@ class BaderSurf(object):
                     raise RuntimeError('Failed finding nucleus:', *self.xyzrho[i]) 
             else:
                 logger.info(self,'Check rho position %.6f %.6f %.6f', *self.xyzrho[i])
-                logger.info(self,'Setting xyrho to coords')
+                logger.info(self,'Setting xyrho for atom to imput coords')
                 self.xyzrho[i] = self.coords[i]
 
         # 4) Compute surface
@@ -319,11 +321,11 @@ class BaderSurf(object):
         drv = getattr(libfapi, feval)
         backend = 1
         verbose = 1
-        ct_ = numpy.asarray(self.grids[:,0], order='F')
-        st_ = numpy.asarray(self.grids[:,1], order='F')
-        cp_ = numpy.asarray(self.grids[:,2], order='F')
-        sp_ = numpy.asarray(self.grids[:,3], order='F')
-        angw_ = numpy.asarray(self.grids[:,4], order='F')
+        ct_ = numpy.asarray(self.grids[:,0], order='C')
+        st_ = numpy.asarray(self.grids[:,1], order='C')
+        cp_ = numpy.asarray(self.grids[:,2], order='C')
+        sp_ = numpy.asarray(self.grids[:,3], order='C')
+        angw_ = numpy.asarray(self.grids[:,4], order='C')
         drv(ctypes.c_int(self.nmo), 
                         ctypes.c_int(self.nprims),  
                         self.icen.ctypes.data_as(ctypes.c_void_p), 
@@ -346,36 +348,42 @@ class BaderSurf(object):
                         cp_.ctypes.data_as(ctypes.c_void_p),
                         sp_.ctypes.data_as(ctypes.c_void_p),
                         angw_.ctypes.data_as(ctypes.c_void_p),
+                        ctypes.c_int(backend),
+                        ctypes.c_int(self.ntrial), 
+                        ctypes.c_double(self.epsiscp), 
+                        ctypes.c_double(self.epsroot), 
+                        ctypes.c_double(self.rmaxsurf), 
+                        ctypes.c_double(self.epsilon), 
+                        ctypes.c_double(self.step), 
+                        ctypes.c_int(self.mstep),
+                        self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
+                        self.rsurf.ctypes.data_as(ctypes.c_void_p),
                         ctypes.c_int(verbose))
-        #    ctypes.c_int(self.npang), 
-        #    ctypes.c_int(self.ntrial), 
-        #    self.rpru.ctypes.data_as(ctypes.c_void_p), 
-        #    ctypes.c_double(self.epsiscp), 
-        #    ctypes.c_double(self.epsroot), 
-        #    ctypes.c_double(self.rmaxsurf), 
-        #    ctypes.c_int(backend),
-        #    ctypes.c_double(self.epsilon), 
-        #    ctypes.c_double(self.step), 
-        #    ctypes.c_int(self.mstep),
-        #    self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
-        #    self.rsurf.ctypes.data_as(ctypes.c_void_p))
         self.rmin = 1000.0
         self.rmax = 0.0
-        #for i in range(self.npang):
-        #    nsurf = int(self.nlimsurf[i])
-        #    self.rmin = numpy.minimum(self.rmin,self.rsurf[i,0])
-        #    self.rmax = numpy.maximum(self.rmax,self.rsurf[i,nsurf-1])
+        for i in range(self.npang):
+            nsurf = int(self.nlimsurf[i])
+            self.rmin = numpy.minimum(self.rmin,self.rsurf[i,0])
+            self.rmax = numpy.maximum(self.rmax,self.rsurf[i,nsurf-1])
         logger.info(self,'Rmin for surface %.6f', self.rmin)
         logger.info(self,'Rmax for surface %.6f', self.rmax)
 
         # 5) Safe surface
-        logger.info(self,'Finish with surface write to HDF5 file')
-        #chkfile.save(self.datafile, 'atom'+str(self.inuc)+'/intersecs', self.nlimsurf)
-        #chkfile.save(self.datafile, 'atom'+str(self.inuc)+'/surface', self.rsurf)
-        #chkfile.save(self.datafile, 'atom'+str(self.inuc)+'/rmin', self.rmin)
-        #chkfile.save(self.datafile, 'atom'+str(self.inuc)+'/rmax', self.rmax)
+        logger.info(self,'Finish with surface')
+        logger.info(self,'Write HDF5 surface file')
+        atom_dic = {'inuc':self.inuc,
+                    'xnuc':self.xnuc,
+                    'xyzrho':self.xyzrho,
+                    'coords':self.grids,
+                    'npang':self.npang,
+                    'ntrial':self.ntrial,
+                    'rmin':self.rmin,
+                    'rmax':self.rmax,
+                    'nlimsurf':self.nlimsurf,
+                    'rsurf':self.rsurf}
+        chkfile.save(self.chkfile, 'atom'+str(self.inuc), atom_dic)
         logger.info(self,'Surface of atom %d saved',self.inuc)
-        logger.timer(self,'Surface build time', t0)
+        logger.timer(self,'BaderSurf build', t0)
         logger.info(self,'')
 
         return self
@@ -385,10 +393,11 @@ class BaderSurf(object):
 if __name__ == '__main__':
     name = 'h2o.wfn.h5'
     surf = BaderSurf(name)
-    surf.epsilon = 1e-4
+    surf.epsilon = 1e-5
+    surf.epsroot = 1e-5
     surf.verbose = 4
-    surf.epsiscp = 0.180
-    surf.mstep = 100
+    surf.epsiscp = 0.220
+    surf.mstep = 220
     surf.inuc = 0
     surf.npang = 5810
     surf.kernel()

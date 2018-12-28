@@ -48,7 +48,7 @@ def lebgrid(npang):
         agrids[:,0] = ct
         agrids[:,1] = st
         agrids[:,2] = cp
-        agrids[:,3] = cp
+        agrids[:,3] = sp
         agrids[:,4] = aw
 
     return agrids

@@ -5,7 +5,7 @@ module mod_surface
   private
 
   integer(kind=ip), parameter, public :: minter = 10 
-  integer(kind=ip), parameter, public :: maxtrial = 13
+  integer(kind=ip), parameter, public :: maxtrial = 21
   ! The MAXSTART parameter has to do with the RSEARCH order, 
   ! RSEARCH nsearch nrstart, (rstart(i),i=1,nrstart)
   ! This order can be used when one wants to avoid using the
@@ -27,8 +27,11 @@ module mod_surface
   integer(kind=ip), allocatable, dimension(:), public :: nlimsurf_
 
   ! options
+  real(kind=rp), public :: step_
+  integer(kind=ip), public :: mstep_
   ! Precision in interatomic surfaces. 
   real(kind=rp), public :: epsilon_
+  real(kind=rp), public :: epsroot_
   ! If a non nuclear maximum is found whose distance to any nucleus 
   ! is larger than EPSISCP, promolden STOPS. This control of non nuclear
   ! maxima is performed in the 'iscp.f' routine. When Hydrogen atoms
@@ -44,7 +47,7 @@ module mod_surface
   real(kind=rp), public :: angx_, angy_, angz_
   integer(kind=ip), public :: steeper_
 
-  public :: init_surf, surf
+  public :: init_surf, surf, rotagrid
   public :: allocate_space_for_surface, deallocate_space_for_surface
 
 contains
@@ -171,6 +174,7 @@ subroutine surf (cot,sit,cop,sip,rsurf,nsurf)
     nsurf = nsurf + 1_ip
     rsurf(nsurf,2) = rmaxsurf_
   end if
+  !write (*,*) cot,sit,cop,sip,nsurf,rsurf(1:nsurf,2)
  
 end subroutine
 
@@ -181,7 +185,6 @@ end subroutine
     implicit none
 
     ! Parameters
-    integer(kind=ip), parameter :: maxstp = 5000
     real(kind=rp), parameter :: tiny = 1d-40
     real(kind=rp), parameter :: epsg = 1d-15
     real(kind=rp), parameter :: epsg1 = 1d-15
@@ -223,7 +226,7 @@ end subroutine
     h = min(h1,x2-x1) ! initial steep size
     y(:) = ystart(:) ! initial point 
  
-    do nstp = 1,maxstp
+    do nstp = 1,mstep_
       call pointr1 (y,rho,grad,gradmod)
       dydx(:) = grad(:)
       yscal(:) = max(abs(y(:))+abs(h*dydx(:))+tiny,eps)
@@ -232,11 +235,12 @@ end subroutine
       if ((x-x2)*(x2-x1).ge.0.0_rp .or. iscp(y,nuc)) then
         ystart(:) = y(:)
         return
+        !write (*,*) y
       end if
       if (abs(hnext).lt.hmin) then
         call ferror ('mod_surface/odeint', 'stepsize small than minimum', faterr)
       end if
-      if (nstp.eq.maxstp) then
+      if (nstp.eq.mstep_) then
         call ferror ('mod_surface/odeint', 'reached maxstp', faterr)
       end if 
       h = hnext
@@ -417,9 +421,9 @@ end subroutine
     x(:) = p(:)
     call pointr1 (x,rho,grad,gradmod)
     do i = 1,ncent_
-      if (abs(p(1)-xyzrho_(i,1)).lt.epsiscp_ .and. &
-          abs(p(2)-xyzrho_(i,2)).lt.epsiscp_ .and. &
-          abs(p(3)-xyzrho_(i,3)).lt.epsiscp_) then
+      if (abs(p(1)-xyzrho_(1,i)).lt.epsiscp_ .and. &
+          abs(p(2)-xyzrho_(2,i)).lt.epsiscp_ .and. &
+          abs(p(3)-xyzrho_(3,i)).lt.epsiscp_) then
           iscp = .true.
           nuc = i
       end if
@@ -432,6 +436,114 @@ end subroutine
  
   end function
 
+! This routine performs three successive rotations R_z, R_y, R_x
+! about the Z, Y, and X axes, respectively, of NANG points placed on 
+! an unit radius sphere, and defined by the polar coordinates 
+! cos(theta)=ct, sin(theta)=st, cos(phi)=cp, and sin(phi)=sp.
+! input
+! angx, angy, angz = Rotation angle about the X, Y, and Z axes.
+! ct,st,cp,sp = cos(theta),sin(theta),cos(phi),sin(phi). 
+! nang = number of points on the unit radius sphere.
+! maxang = maximum number of points.
+! output
+! ct,st,cp,sp = New polar coordinates after rotations.
+subroutine rotagrid (ct,st,cp,sp,npang)
+
+  implicit none
+      
+  real(kind=rp), parameter :: eps = 1.0d-07
+  real(kind=rp), parameter :: zero = 0.0_rp
+  real(kind=rp), parameter :: one = 1.0_rp
+
+  integer(kind=ip), intent(in) :: npang
+  real(kind=rp), intent(inout) :: ct(npang),st(npang),cp(npang),sp(npang)
+
+  real(kind=rp) :: xmat(3,3),ymat(3,3),zmat(3,3),rot(3,3)
+  real(kind=rp) :: prod,x,y,z,xp,yp,zp,r,rxy,cangx,cangy,cangz,sangx,sangy,sangz
+  integer(kind=ip) :: i,j,k
+
+  ! Rotacion matrix about X axis.
+  xmat = zero
+  xmat(1,1) = one
+  cangx = cos(angx_)
+  sangx = sin(angx_)
+  xmat(2,2) = +cangx
+  xmat(3,2) = +sangx
+  xmat(2,3) = -sangx
+  xmat(3,3) = +cangx
+
+  ! Rotacion matrix about Y axis.
+  ymat = zero
+  ymat(2,2) = one
+  cangy = cos(angy_)
+  sangy = sin(angy_)
+  ymat(1,1) = +cangy
+  ymat(3,1) = +sangy
+  ymat(1,3) = -sangy
+  ymat(3,3) = +cangy
+
+  ! Rotacion matrix about Z axis.
+  zmat = zero
+  zmat(3,3) = one
+  cangz = cos(angz_)
+  sangz = sin(angz_)
+  zmat(1,1) = +cangz
+  zmat(2,1) = +sangz
+  zmat(1,2) = -sangz
+  zmat(2,2) = +cangz
+
+  ! Full rotacion matrix. R = R_X * R_Y * R_Z
+  do i = 1,3
+    do j = 1,3
+      prod = zero
+      do k = 1,3
+        prod = prod + ymat(i,k)*zmat(k,j)
+      end do
+      rot(i,j) = prod
+    end do
+  end do
+  zmat(1:3,1:3) = rot(1:3,1:3)
+  do i = 1,3
+    do j = 1,3
+      prod = zero
+      do k = 1,3
+        prod = prod + xmat(i,k)*zmat(k,j)
+      end do
+      rot(i,j) = prod
+    end do
+  end do
+
+  ! Rotate angles.
+  do i = 1,npang
+    x = st(i)*cp(i)
+    y = st(i)*sp(i)
+    z = ct(i)
+    xp = rot(1,1)*x + rot(1,2)*y + rot(1,3)*z
+    yp = rot(2,1)*x + rot(2,2)*y + rot(2,3)*z
+    zp = rot(3,1)*x + rot(3,2)*y + rot(3,3)*z
+    ! Rebuild CT,ST,CP, and SP
+    rxy = xp*xp + yp*yp
+    r = sqrt(rxy+zp*zp)
+    if (rxy.lt.eps) then
+      if (zp.ge.zero) then
+        ct(i) = +one
+      else
+        ct(i) = -one
+      endif
+      st(i) = zero
+      sp(i) = zero
+      cp(i) = one
+    else
+      rxy = sqrt(rxy)
+      ct(i) = zp/r
+      st(i) = sqrt((one-ct(i))*(one+ct(i)))
+      cp(i) = xp/rxy
+      sp(i) = yp/rxy
+    end if
+  end do
+            
+end subroutine
+
   subroutine init_surf ()
 
     implicit none
@@ -442,12 +554,15 @@ end subroutine
     rprimer_ = 0.4_rp
     inuc_ = 0_ip
     epsilon_ = 1d-5 
+    epsroot_ = 1d-4
     epsiscp_ = 0.08_rp
     angx_ = 0.0_rp
     angy_ = 0.0_rp
     angz_ = 0.0_rp
     npang_ = 5810
     rmaxsurf_ = 10.0_rp
+    step_ = 0.1_rp
+    mstep_ = 100_ip
 
   end subroutine
                                                                         
