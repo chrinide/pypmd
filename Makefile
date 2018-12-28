@@ -4,7 +4,7 @@ FC = gfortran
 LD = gfortran
 FDEBUG = -Wpedantic -g -pg -Wunused -fbacktrace -fcheck=bounds,mem,pointer,do,array-temps -Wall
 LFLAGS = -shared
-FFLAGS = -O3 -mtune=native -fopenmp -fpic #$(FDEBUG) 
+FFLAGS = -O3 -mtune=native -fopenmp -fpic $(FDEBUG) 
 
 all: libfapi.so
  

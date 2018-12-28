@@ -1,8 +1,8 @@
 subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
                        nuexp, rcutte, mo_coeff, mo_occ, natm, coords, &
                        npang, inuc, xyzrho, filename, ct, st, cp, sp, &
-                       angw, backend, ntrial, epsiscp, epsilon, rmaxsurf, &
-                       step, mstep, nlimsurf, rlimsurf, verbose) bind(c)
+                       angw, backend, ntrial, epsiscp, epsilon, rprimer, &
+                       rmaxsurf, step, mstep, nlimsurf, rlimsurf) bind(c)
 
   use mod_prec, only: rp, ip
   use iso_c_binding, only: c_null_char, c_char
@@ -38,11 +38,11 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
   integer(kind=ip), intent(out), dimension(natm,ngtoh,mgrp) :: nuexp
   real(kind=rp), intent(out), dimension(natm,mgrp) :: rcutte
 
-  integer(kind=ip), intent(in), value :: npang, inuc, verbose
+  integer(kind=ip), intent(in), value :: npang, inuc
   real(kind=rp), intent(in), dimension(3,natm) :: xyzrho
   character(kind=c_char,len=1), intent(in) :: filename(*)
 
-  integer(kind=ip), intent(in), value :: backend, ntrial, mstep
+  integer(kind=ip), intent(in), value :: backend, ntrial, mstep, rprimer
   real(kind=rp), intent(in), value :: epsiscp, epsilon , rmaxsurf, step
   real(kind=rp), intent(in), dimension(npang) :: ct, st, cp, sp, angw
   real(kind=rp), intent(out) :: rlimsurf(ntrial,npang) 
@@ -53,9 +53,6 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
   character(len=mline) :: files
   character(len=:), allocatable :: filename_
   character(len=4) :: d4
-  integer(kind=ip) :: suma
-  real(kind=rp) :: xpoint(3)
-  real(kind=rp) :: rho, grad(3), gradmod
 
   i = 1
   do
@@ -83,6 +80,7 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
   rmaxsurf_ = rmaxsurf
   step_ = step
   mstep_ = mstep
+  rprimer_ = rprimer
 
   call allocate_space_for_mole ()
   call allocate_space_for_basis ()
@@ -108,42 +106,11 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
   d4 = fourchar(inuc_)
   files = trim(filename_)//".surf"
 
-  if (verbose == 1) then
-    write (*,*) "nmp",nmo_
-    write (*,*) "nprims",nprims_
-    write (*,*) "ncent",ncent_
-    write (*,*) "npang",npang_
-    write (*,*) "inuc",inuc_
-    write (*,*) "ntrial",ntrial_
-    write (*,*) "epsiscp",epsiscp_
-    write (*,*) "epsilon",epsilon_
-    write (*,*) "rmaxsurf", rmaxsurf_
-    write (*,*) "step", step_
-    write (*,*) "mstep",mstep_
-    write (*,*) "xnuc",xnuc_
-    write (*,*) "rprimer",rprimer_
-    do i = 1,ncent_
-      write (*,*) xyzrho_(:,i)
-    end do
-  end if
-  xpoint(1) = 0.0_rp
-  xpoint(2) = 0.0_rp
-  xpoint(3) = 0.3_rp
-  call density_grad_shell (xpoint,rho,grad,gradmod)
-  write (uout,'(1x,a)') string('# --------------------------------------')
-  write (uout,'(1x,a)') string('# --- Follow values for test fshells ---')
-  write (uout,'(1x,a,1x,3(1x,f0.8))') string('# Coordinates of point'), xpoint
-  write (uout,'(1x,a,1x,f0.8)')  string('# Density value'), rho
-  write (uout,'(1x,a,1x,3(1x,f0.8))') string('# Gradient value'), grad(:)
-  write (uout,'(1x,a,1x,f0.8)') string('# Gradmod value'), gradmod
-  write (uout,'(1x,a)') string('# --------------------------------------')
-
   !$omp parallel default(none) &
   !$omp private(j,nsurf,rsurf) &
   !$omp shared(npang_,ct,st,cp,sp,rlimsurf,nlimsurf)
   !$omp do schedule(dynamic)
   do j = 1,npang_
-    !write (*,*) ct(j), st(j), cp(j), sp(j), angw(j)
     call surf (ct(j),st(j),cp(j),sp(j),rsurf,nsurf)
     do k = 1,nsurf
       rlimsurf(k,j) = rsurf(k,2)

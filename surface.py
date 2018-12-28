@@ -320,7 +320,6 @@ class BaderSurf(object):
         feval = 'surf_driver'
         drv = getattr(libfapi, feval)
         backend = 1
-        verbose = 1
         ct_ = numpy.asarray(self.grids[:,0], order='C')
         st_ = numpy.asarray(self.grids[:,1], order='C')
         cp_ = numpy.asarray(self.grids[:,2], order='C')
@@ -354,11 +353,11 @@ class BaderSurf(object):
                         ctypes.c_double(self.epsroot), 
                         ctypes.c_double(self.rmaxsurf), 
                         ctypes.c_double(self.epsilon), 
+                        ctypes.c_double(self.rprimer), 
                         ctypes.c_double(self.step), 
                         ctypes.c_int(self.mstep),
                         self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
-                        self.rsurf.ctypes.data_as(ctypes.c_void_p),
-                        ctypes.c_int(verbose))
+                        self.rsurf.ctypes.data_as(ctypes.c_void_p))
         self.rmin = 1000.0
         self.rmax = 0.0
         for i in range(self.npang):
