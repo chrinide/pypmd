@@ -99,7 +99,7 @@ void csurf_driver(const int nmo,
                   const double *rpru,
                   const double step,
                   const int mstep,
-                  double *nlimsurf, double *rlimsurf);
+                  int *nlimsurf, double *rlimsurf);
 void surface(void);
 
 #endif

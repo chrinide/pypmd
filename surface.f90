@@ -7,7 +7,7 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
   use mod_prec, only: rp, ip
   use iso_c_binding, only: c_null_char, c_char
   use iso_fortran_env, only: uout=>output_unit
-  use mod_io, only: string, fourchar, mline
+  use mod_io, only: string
   use mod_param, only: init_param
   use mod_mole, only: ncent_, coords_, allocate_space_for_mole, &
                                        deallocate_space_for_mole
@@ -19,7 +19,6 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
                       xnuc_, inuc_, xyzrho_, npang_, rmaxsurf_, surf, epsroot_, &
                       allocate_space_for_surface, deallocate_space_for_surface, &
                       epsiscp_, mstep_, ntrial_, steeper_, step_, rprimer_, odeint, rkck
-  use mod_fields, only: density_grad, density_grad_shell
   implicit none
 
   integer(kind=ip), intent(in), value :: natm
@@ -49,23 +48,8 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
   real(kind=rp), intent(out) :: rlimsurf(ntrial,npang) 
   integer(kind=ip), intent(out) :: nlimsurf(npang) 
 
-  logical :: inf
-  real(kind=rp) :: rmaxs, rmins, rsurf(minter,2)
-  integer(kind=ip) :: i, lsu, ltxt, j, nchars, nsurf, k
-  character(len=mline) :: files
-  character(len=:), allocatable :: filename_
-  character(len=4) :: d4
-  real(kind=rp) :: xpoint(3), xout(3), xerr(3)
-  real(kind=rp) :: rho, grad(3), gradmod
-
-  i = 1
-  do
-    if (filename(i) == c_null_char) exit
-    i = i + 1
-  end do
-  nchars = i - 1
-  allocate(character(len=nchars) :: filename_)
-  filename_ = transfer(filename(1:nchars), filename_)
+  real(kind=rp) :: rsurf(minter,2)
+  integer(kind=ip) :: j, k, nsurf
 
   call init_param ()
   call init_basis ()
@@ -105,29 +89,6 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
   rcutte_ = rcutte
   nuexp_ = nuexp
 
-  ! Init
-  ltxt = 999
-  lsu = 998
-  d4 = fourchar(inuc_)
-  files = trim(filename_)//".surf"
-
-  xpoint(1) = 0.0_rp
-  xpoint(2) = 0.0_rp
-  xpoint(3) = 0.3_rp
-  call density_grad_shell (xpoint,rho,grad,gradmod)
-  write (uout,'(1x,a)') string('# --------------------------------------')
-  write (uout,'(1x,a)') string('# --- Follow values for test fshells ---')
-  write (uout,'(1x,a,1x,3(1x,f0.8))') string('# Coordinates of point'), xpoint
-  write (uout,'(1x,a,1x,f0.8)')  string('# Density value'), rho
-  write (uout,'(1x,a,1x,3(1x,f0.8))') string('# Gradient value'), grad(:)
-  write (uout,'(1x,a,1x,f0.8)') string('# Gradmod value'), gradmod
-  write (uout,'(1x,a)') string('# --------------------------------------')
-  call rkck(xpoint, grad, step_, xout, xerr) 
-  write (uout,'(1x,a,1x,3(1x,f0.8))') string('# xout value'), xout(:)
-  write (uout,'(1x,a,1x,3(1x,f0.8))') string('# xerr value'), xerr(:)
-  call odeint(xpoint,step_,1.0_rp,inf,epsilon_)
-  write (uout,'(1x,a,1x,3(1x,f0.8))') string('# odeint value'), xpoint(:)
-
   !$omp parallel default(none) &
   !$omp private(j,nsurf,rsurf) &
   !$omp shared(npang_,ct,st,cp,sp,rlimsurf,nlimsurf)
@@ -142,30 +103,6 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
   !$omp end do nowait
   !$omp end parallel
   
-  open (ltxt,file=trim(files)//"-txt"//d4)
-  open (lsu,file=trim(files)//d4,form='unformatted')
-  write (ltxt,1111) npang_, inuc_
-  write (lsu) npang_, inuc_
-  write (ltxt,3333) (nlimsurf(j),j=1,npang)
-  write (ltxt,1090)
-  write (lsu) (nlimsurf(j),j=1,npang)
-  rmins = 1000_rp
-  rmaxs = 0.0_rp
-  do j = 1,npang_
-    nsurf = nlimsurf(j)
-    rmins = min(rmins,rlimsurf(1,j))
-    rmaxs = max(rmaxs,rlimsurf(nsurf,j))
-    write (ltxt,2222) ct(j),st(j),cp(j),sp(j),angw(j),(rlimsurf(k,j),k=1,nsurf)
-    write (lsu) ct(j),st(j),cp(j),sp(j),angw(j),(rlimsurf(k,j),k=1,nsurf)
-  end do
-  close (ltxt)
-  close (lsu)
-
-1090 format (9x,'cos(theta)',13x,'sin(theta)',13x,'cos(phi)',15x,'sin(phi)',15x,'weight')
-1111 format (2(1x,i5),' <--- (Angular points & Atom)')
-3333 format (20(1x,i2),4x,'(Surface intersections)')
-2222 format (15(1x,F22.15))
-
   call deallocate_space_for_basis ()
   call deallocate_space_for_mole ()
   call deallocate_space_for_surface ()

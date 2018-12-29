@@ -35,7 +35,7 @@ void csurf_driver(const int nmo,
                   const double *rpru,
                   const double step,
                   const int mstep,
-                  double *nlimsurf, double *rlimsurf){
+                  int *nlimsurf, double *rlimsurf){
 
   int i, j, k;
 
@@ -148,44 +148,13 @@ void csurf_driver(const int nmo,
   assert(nlimsurf_ != NULL);
 
   init_nlm();
-	//print_mole();
-	//print_basis();
-
-  double point[3],grad[3],xout[3],xerr[3];
-	double rho, gradmod;
-  point[0] = 0.0;
-  point[1] = 0.0;
-  point[2] = 0.3;
-  rho_grad(point, &rho, grad, &gradmod);
-  printf("The value of shell rho is %f\n", rho);
-  printf("The value of shell grad is %f %f %f\n", grad[0], grad[1], grad[2]);
-  printf("The value of shell gradmod is %f\n", gradmod);
-  steeper_rkck(point, grad, step_, xout, xerr);
-  printf("The value of xout is %f %f %f\n", xout[0], xout[1], xout[2]);
-  printf("The value of xerr is %f %f %f\n", xerr[0], xerr[1], xerr[2]);
-  int ier = odeint(point,step_,epsilon_);
-  printf("Odeint %f %f %f\n",point[0],point[1],point[2]);
-
-  //bool check;
-	//int nuc;
-  //point[0] = 0.3;
-  //point[1] = 0.0;
-  //point[2] = 0.3;
-  //check = checkcp(point, &nuc);
-  //printf("Iscp %d %d\n", check, nuc);
-  //point[0] = xnuc_[0];
-  //point[1] = xnuc_[1];
-  //point[2] = xnuc_[2];
-  //check = checkcp(point, &nuc);
-  //printf("Iscp %d %d\n", check, nuc);
-
   surface();
-	//for (i=0; i<npang_; i++){
-  //  nlimsurf[i] = nlimsurf_[i];
-	//  for (j=0; j<ntrial_; j++){
-  //    rsurf[i*ntrial_+j] = rsurf_[i*ntrial_+j];
-  //  }
-  //}
+	for (i=0; i<npang_; i++){
+    nlimsurf[i] = nlimsurf_[i];
+	  for (j=0; j<ntrial_; j++){
+      rlimsurf[i*ntrial_+j] = rsurf_[i*ntrial_+j];
+    }
+  }
 
   free(rsurf_);
   free(nlimsurf_);
@@ -226,18 +195,6 @@ void surface(){
   int nintersec = 0;
   double xpoint[3];
 
-  printf("inuc_ %d\n", inuc_);
-  printf("epsiscp %f\n", epsiscp_);
-  printf("ntrial %d\n", ntrial_);
-  printf("npang %d\n", npang_);
-  printf("epsroot %f\n", epsroot_);
-  printf("rmaxsurf %f\n", rmaxsurf_);
-  printf("backend %d\n", backend_);
-  printf("epsilon %f\n", epsilon_);
-  printf("step %f\n", step_);
-  printf("mstep %d\n", mstep_);
-  printf("xnuc %f %f %f\n", xnuc_[0], xnuc_[1], xnuc_[2]);
-
   if (ncent_ == 1){  
 	  for (i=0; i<npang_; i++){
       nlimsurf_[i] = 1;
@@ -268,14 +225,11 @@ void surface(){
       //TODO: Better Check for error
       int ier = odeint(xpoint, step_, epsilon_);
       if (ier == 1) {
-        printf("Too short step on Odeint\n");
-        exit(-1);
+        cerror("too short steep on odeint");
       } else if (ier == 2) {
-        printf("Too many steeps on Odeint\n");
-        exit(-1);
+        cerror("too many steeps on odeint");
 			} else if (ier == 4) {
-        printf("NNA on Odeint\n");
-        exit(-1);
+        cerror("nna on odeint");
 			}
       bool good = checkcp(xpoint, &ib);
       rb = ract;
@@ -315,14 +269,11 @@ void surface(){
         int im;
         int ier = odeint(xpoint, step_, epsilon_);
       	if (ier == 1) {
-	        printf("Too short step on Odeint\n");
-	        exit(-1);
+        	cerror("too short steep on odeint");
 	      } else if (ier == 2) {
-	        printf("Too many steeps on Odeint\n");
-	        exit(-1);
+        	cerror("too many steeps on odeint");
 				} else if (ier == 4) {
-	        printf("NNA on Odeint\n");
-	        exit(-1);
+        	cerror("nna on odeint");
 				}
         bool good = checkcp(xpoint, &im);
         if (im == ia){
@@ -366,11 +317,11 @@ void surface(){
       int offset = i*ntrial_+(nintersec-1);
       rsurf_[offset] = rmaxsurf_;
     }
-    printf("#* %d %d %.6f %.6f %.6f %.6f ",i,nlimsurf_[i],ct_[i],st_[i],cp_[i],sp_[i]);
-	  for (j=0; j<nlimsurf_[i]; j++){
-     printf(" %.6f ",rsurf_[i*ntrial_+j]);
-    }
-    printf("\n");
+    //printf("#* %d %d %.6f %.6f %.6f %.6f ",i,nlimsurf_[i],ct_[i],st_[i],cp_[i],sp_[i]);
+	  //for (j=0; j<nlimsurf_[i]; j++){
+    // printf(" %.6f ",rsurf_[i*ntrial_+j]);
+    //}
+    //printf("\n");
   }
 }
 
@@ -416,7 +367,6 @@ int odeint(double *ystart, double h1, double eps){
 		}
 		if (fabs(hnext) <= hmin) cerror("Step size too small in odeint");
 		if (i == (mstep_-1)) cerror("Reached max steps in odeint");
-    //printf("%d %f %f %f %f\n",i, y[0], y[1], y[2], hnext);
 		h = hnext;
   }
     
@@ -428,7 +378,7 @@ int odeint(double *ystart, double h1, double eps){
     ier = 3;
   } else { 
   	printf("NNA at %f %f %f\n", y[0], y[1], y[2]);
-	  //cerror("NNA found in odeint"); 
+	  cerror("NNA found in odeint"); 
   }
 
   return ier;
@@ -445,7 +395,6 @@ void rkqs(double *y, double *dydx, double *x,
   *hnext = 0.0;
   errmax = 0.0;
 
-	//printf("i adaptive h %f\n", h);
 	for (;;){
 		steeper_rkck(y, dydx, h, ytemp, yerr);
 		errmax = 0.0;
@@ -460,7 +409,6 @@ void rkqs(double *y, double *dydx, double *x,
 			if (xnew == *x) {
         cerror("stepsize underflow in rkqs");
       }
-	    //printf("ii adaptive h %f\n", h);
 			continue;
 		}
 		else {
@@ -476,10 +424,10 @@ void rkqs(double *y, double *dydx, double *x,
 			break; //return
 		}
 	}
-	//printf("f adaptive h %f\n", *hnext);
 }
 
 void steeper_rkck(double *xpoint, double *grdt, double h0, double *xout, double *xerr){
+
   static const double b21 = 1.0/5.0;
   static const double b31 = 3.0/40.0;
   static const double b32 = 9.0/40.0;
@@ -499,11 +447,11 @@ void steeper_rkck(double *xpoint, double *grdt, double h0, double *xout, double 
   static const double c3 = 250.0/621.0;
   static const double c4 = 125.0/594.0;
   static const double c6 = 512.0/1771.0;
-  static const double dc1 = c1-(2825.0/27648.0);
-  static const double dc3 = c3-(18575.0/48384.0);
-  static const double dc4 = c4-(13525.0/55296.0);
-  static const double dc5 = -277.0/14336.0;
-  static const double dc6 = c6-(1.0/4.0);
+  double dc1 = c1-(2825.0/27648.0);
+  double dc3 = c3-(18575.0/48384.0);
+  double dc4 = c4-(13525.0/55296.0);
+  double dc5 = -277.0/14336.0;
+  double dc6 = c6-(1.0/4.0);
   
   double rho, grad[3], gradmod;
 

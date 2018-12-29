@@ -40,7 +40,7 @@ System: ('Linux', 'cromo', '4.9.0-0.bpo.3-amd64', '#1 SMP Debian 4.9.30-2+deb9u5
 Python 2.7.14 (default, Apr 10 2018, 19:21:27) 
 [GCC 7.3.0]
 numpy 1.15.4  scipy 1.2.0
-Date: Fri Dec 28 20:11:41 2018
+Date: Sat Dec 29 22:37:13 2018
 PySCF version 1.6b
 PySCF path  /home/jluis/src/pyscf/dev/pyscf
 GIT ORIG_HEAD 26de5e7c8230210833f9d25fbbcde03cf2076fdc
@@ -71,7 +71,7 @@ number of NR pGTOs = 42
 number of NR cGTOs = 7
 basis = sto-6g
 ecp = {}
-CPU time:         0.26
+CPU time:         0.28
 
 
 ******** <class 'pyscf.dft.rks_symm.SymAdaptedRKS'> ********
@@ -97,25 +97,25 @@ becke partition: Becke, JCP, 88, 2547 (1988)
 pruning grids: None
 grids dens level: 3
 symmetrized grids: 1
-atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x2b57ff2ed0c8>
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x2abf51a950c8>
 User specified grid scheme {'H': (20, 110), 'O': (20, 110)}
 Freeze 0 electrons in irreps []
     10 free electrons in irreps A1 B1 B2
 Set gradient conv threshold to 3.16228e-05
 tot grids = 6600
 init E= -76.2296161627816
-HOMO (B2) = -0.326586482439764  LUMO (A1) = 0.214709447496429
+HOMO (B2) = -0.326586482439765  LUMO (A1) = 0.214709447496429
 cycle= 1 E= -76.0839301804198  delta_E= 0.146  |g|= 0.483  |ddm|= 1.67
-HOMO (B2) = 0.0819636256176351  LUMO (A1) = 0.363483749383423
-cycle= 2 E= -76.0792256558163  delta_E= 0.0047  |g|= 0.505  |ddm|= 1.43
-HOMO (B2) = -0.0759386125167963  LUMO (A1) = 0.290800475825433
-cycle= 3 E= -76.1657338743612  delta_E= -0.0865  |g|= 0.00322  |ddm|= 0.761
-HOMO (B2) = -0.078906761017782  LUMO (A1) = 0.286919196314867
+HOMO (B2) = 0.0819636256176333  LUMO (A1) = 0.363483749383423
+cycle= 2 E= -76.0792256558162  delta_E= 0.0047  |g|= 0.505  |ddm|= 1.43
+HOMO (B2) = -0.0759386125167961  LUMO (A1) = 0.290800475825433
+cycle= 3 E= -76.1657338743611  delta_E= -0.0865  |g|= 0.00322  |ddm|= 0.761
+HOMO (B2) = -0.0789067610177834  LUMO (A1) = 0.28691919631486
 cycle= 4 E= -76.1657373925608  delta_E= -3.52e-06  |g|= 0.000607  |ddm|= 0.00615
-HOMO (B2) = -0.0790711159239418  LUMO (A1) = 0.286855097822966
+HOMO (B2) = -0.0790711159239345  LUMO (A1) = 0.286855097822969
 cycle= 5 E= -76.165737528176  delta_E= -1.36e-07  |g|= 1.36e-05  |ddm|= 0.00106
-HOMO (B2) = -0.0790774524306897  LUMO (A1) = 0.286849509417032
+HOMO (B2) = -0.0790774524304902  LUMO (A1) = 0.286849509417205
 cycle= 6 E= -76.1657375282364  delta_E= -6.04e-11  |g|= 5.77e-07  |ddm|= 1.82e-05
-HOMO (B2) = -0.079077888120132  LUMO (A1) = 0.286849365589808
+HOMO (B2) = -0.0790778881202652  LUMO (A1) = 0.286849365589748
 Extra cycle  E= -76.1657375282364  delta_E= -1.42e-14  |g|= 5.98e-07  |ddm|= 1.68e-06
 converged SCF energy = -76.1657375282364

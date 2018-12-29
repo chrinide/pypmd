@@ -48,10 +48,10 @@ BOHR = 0.52917721092  # Angstroms
 
 GRADEPS = 1e-10
 RHOEPS = 1e-10
-MINSTEP = 1e-4
+MINSTEP = 1e-6
 MAXSTEP = 0.75
-SAFETY = 0.8
-ENLARGE = 1.2
+SAFETY = 0.9
+ENLARGE = 1.6
 
 OCCDROP = 1e-12
 HMINIMAL = numpy.finfo(numpy.float64).eps

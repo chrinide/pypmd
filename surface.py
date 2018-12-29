@@ -128,7 +128,7 @@ def gradrho(self, xpoint, h):
     grdt = grad
     grdmodule = gradmod
 
-    while (grdmodule > param.GRADEPS and niter < self.mstep):
+    while (grdmodule > 1e-8 and niter < self.mstep*3):
         niter += 1
         ier = 1
         while (ier != 0):
@@ -309,7 +309,7 @@ class BaderSurf(object):
         for i in range(self.natm):
             self.xyzrho[i], gradmod = gradrho(self,self.coords[i],self.step)
             if (gradmod > 1e-4):
-                if (self.charges[self.inuc] > 2.0):
+                if (self.charges[i] > 2.0):
                     logger.info(self,'Check rho position %.6f %.6f %.6f', *self.xyzrho[i])
                 else:
                     raise RuntimeError('Failed finding nucleus:', *self.xyzrho[i]) 
@@ -326,7 +326,6 @@ class BaderSurf(object):
         angw_ = numpy.asarray(self.grids[:,4], order='C')
         # 4) Compute surface
         if (self.csurf):
-            #pass
             feval = 'csurf_driver'
             drv = getattr(libcapi, feval)
             drv(ctypes.c_int(self.nmo),  
@@ -361,47 +360,46 @@ class BaderSurf(object):
                 self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
                 self.rsurf.ctypes.data_as(ctypes.c_void_p))
         else:
-            pass
-        feval = 'surf_driver'
-        drv = getattr(libfapi, feval)
-        drv(ctypes.c_int(self.nmo), 
-            ctypes.c_int(self.nprims),  
-            self.icen.ctypes.data_as(ctypes.c_void_p), 
-            self.ityp.ctypes.data_as(ctypes.c_void_p), 
-            self.oexp.ctypes.data_as(ctypes.c_void_p), 
-            self.ngroup.ctypes.data_as(ctypes.c_void_p), 
-            self.nzexp.ctypes.data_as(ctypes.c_void_p), 
-            self.nuexp.ctypes.data_as(ctypes.c_void_p), 
-            self.rcutte.ctypes.data_as(ctypes.c_void_p), 
-            self.mo_coeff.ctypes.data_as(ctypes.c_void_p), 
-            self.mo_occ.ctypes.data_as(ctypes.c_void_p), 
-            ctypes.c_int(self.natm),  
-            self.coords.ctypes.data_as(ctypes.c_void_p), 
-            ctypes.c_int(self.npang),  
-            ctypes.c_int((self.inuc+1)),  
-            self.xyzrho.ctypes.data_as(ctypes.c_void_p), 
-            ctypes.c_char_p(self.chkfile),
-            ct_.ctypes.data_as(ctypes.c_void_p),
-            st_.ctypes.data_as(ctypes.c_void_p),
-            cp_.ctypes.data_as(ctypes.c_void_p),
-            sp_.ctypes.data_as(ctypes.c_void_p),
-            angw_.ctypes.data_as(ctypes.c_void_p),
-            ctypes.c_int(backend),
-            ctypes.c_int(self.ntrial), 
-            ctypes.c_double(self.epsiscp), 
-            ctypes.c_double(self.epsroot), 
-            ctypes.c_double(self.rmaxsurf), 
-            ctypes.c_double(self.epsilon), 
-            ctypes.c_double(self.rprimer), 
-            ctypes.c_double(self.step), 
-            ctypes.c_int(self.mstep),
-            self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
-            self.rsurf.ctypes.data_as(ctypes.c_void_p))
+            feval = 'surf_driver'
+            drv = getattr(libfapi, feval)
+            drv(ctypes.c_int(self.nmo), 
+                ctypes.c_int(self.nprims),  
+                self.icen.ctypes.data_as(ctypes.c_void_p), 
+                self.ityp.ctypes.data_as(ctypes.c_void_p), 
+                self.oexp.ctypes.data_as(ctypes.c_void_p), 
+                self.ngroup.ctypes.data_as(ctypes.c_void_p), 
+                self.nzexp.ctypes.data_as(ctypes.c_void_p), 
+                self.nuexp.ctypes.data_as(ctypes.c_void_p), 
+                self.rcutte.ctypes.data_as(ctypes.c_void_p), 
+                self.mo_coeff.ctypes.data_as(ctypes.c_void_p), 
+                self.mo_occ.ctypes.data_as(ctypes.c_void_p), 
+                ctypes.c_int(self.natm),  
+                self.coords.ctypes.data_as(ctypes.c_void_p), 
+                ctypes.c_int(self.npang),  
+                ctypes.c_int((self.inuc+1)),  
+                self.xyzrho.ctypes.data_as(ctypes.c_void_p), 
+                ctypes.c_char_p(self.chkfile),
+                ct_.ctypes.data_as(ctypes.c_void_p),
+                st_.ctypes.data_as(ctypes.c_void_p),
+                cp_.ctypes.data_as(ctypes.c_void_p),
+                sp_.ctypes.data_as(ctypes.c_void_p),
+                angw_.ctypes.data_as(ctypes.c_void_p),
+                ctypes.c_int(backend),
+                ctypes.c_int(self.ntrial), 
+                ctypes.c_double(self.epsiscp), 
+                ctypes.c_double(self.epsroot), 
+                ctypes.c_double(self.rmaxsurf), 
+                ctypes.c_double(self.epsilon), 
+                ctypes.c_double(self.rprimer), 
+                ctypes.c_double(self.step), 
+                ctypes.c_int(self.mstep),
+                self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
+                self.rsurf.ctypes.data_as(ctypes.c_void_p))
 
         self.rmin = 1000.0
         self.rmax = 0.0
         for i in range(self.npang):
-            nsurf = int(self.nlimsurf[i])
+            nsurf = self.nlimsurf[i]
             self.rmin = numpy.minimum(self.rmin,self.rsurf[i,0])
             self.rmax = numpy.maximum(self.rmax,self.rsurf[i,nsurf-1])
         logger.info(self,'Rmin for surface %.6f', self.rmin)
@@ -431,14 +429,26 @@ class BaderSurf(object):
 
 if __name__ == '__main__':
     name = 'h2o.wfn.h5'
+
     surf = BaderSurf(name)
     surf.epsilon = 1e-5
     surf.epsroot = 1e-5
     surf.verbose = 4
     surf.epsiscp = 0.220
-    surf.mstep = 240
-    surf.inuc = 0
-    surf.npang = 14
+    surf.mstep = 140
     surf.csurf = True
+    surf.npang = 5810
+    surf.inuc = 0
     surf.kernel()
- 
+
+    surf = BaderSurf(name)
+    surf.epsilon = 1e-5
+    surf.epsroot = 1e-5
+    surf.verbose = 4
+    surf.epsiscp = 0.220
+    surf.mstep = 140
+    surf.csurf = True
+    surf.npang = 5810
+    surf.inuc = 1
+    surf.kernel()
+

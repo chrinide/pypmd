@@ -174,7 +174,6 @@ subroutine surf (cot,sit,cop,sip,rsurf,nsurf)
     nsurf = nsurf + 1_ip
     rsurf(nsurf,2) = rmaxsurf_
   end if
-  write(*,*) cot,sit,cop,sip,nsurf,rsurf(1:nsurf,2)
  
 end subroutine
 

@@ -3,11 +3,11 @@
 CC = gcc
 FC = gfortran
 LD = gcc
-FDEBUG = -fpic -Wpedantic -g -pg -Wunused -fbacktrace -fcheck=bounds,mem,pointer,do,array-temps -Wall
-CDEBUG = -fpic -Wpedantic -g -pg -Wunused -Wall
+FDEBUG = -Wpedantic -g -pg -Wunused -fbacktrace -fcheck=bounds,mem,pointer,do,array-temps -Wall
+CDEBUG = -Wpedantic -g -pg -Wunused -Wall
 LFLAGS = -shared
-FFLAGS = $(FDEBUG) -O3 -mtune=native -fopenmp -fpic
-CFLAGS = $(CDEBUG) -O3 -mtune=native -fpic
+FFLAGS = $(FDEBUG) -fpic -O3 -mtune=native -fopenmp
+CFLAGS = $(CDEBUG) -fpic -O3 -mtune=native -fopenmp
 
 all: libfapi.so libcapi.so
  
@@ -15,7 +15,7 @@ FOBJECTS = mod_prec.o mod_io.o mod_memory.o mod_param.o mod_futils.o \
 mod_mole.o mod_basis.o mod_gto.o mod_fields.o mod_surface.o \
 surface.o fields.o lebgrid.o  
 
-COBJECTS = csurf.o
+COBJECTS = csurf.o cleb.o
 
 libfapi.so: $(FOBJECTS)
 	$(LD) $(LFLAGS) -o libfapi.so $(FOBJECTS) -lgfortran
