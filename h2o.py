@@ -20,6 +20,7 @@ mol.charge = 0
 mol.build()
 
 mf = dft.RKS(mol)
+mf.chkfile = name+'.chk'
 mf.max_cycle = 150
 mf.grids.atom_grid = {'H': (20,110), 'O': (20,110)}
 mf.grids.prune = None

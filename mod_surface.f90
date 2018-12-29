@@ -4,7 +4,7 @@ module mod_surface
   implicit none
   private
 
-  integer(kind=ip), parameter, public :: minter = 10 
+  integer(kind=ip), parameter, public :: minter = 11 
   integer(kind=ip), parameter, public :: maxtrial = 21
   ! The MAXSTART parameter has to do with the RSEARCH order, 
   ! RSEARCH nsearch nrstart, (rstart(i),i=1,nrstart)
@@ -47,7 +47,7 @@ module mod_surface
   real(kind=rp), public :: angx_, angy_, angz_
   integer(kind=ip), public :: steeper_
 
-  public :: init_surf, surf, rotagrid
+  public :: init_surf, surf, rotagrid, odeint, rkck
   public :: allocate_space_for_surface, deallocate_space_for_surface
 
 contains
@@ -174,6 +174,7 @@ subroutine surf (cot,sit,cop,sip,rsurf,nsurf)
     nsurf = nsurf + 1_ip
     rsurf(nsurf,2) = rmaxsurf_
   end if
+  write(*,*) cot,sit,cop,sip,nsurf,rsurf(1:nsurf,2)
  
 end subroutine
 

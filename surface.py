@@ -21,6 +21,7 @@ if sys.version_info >= (3,):
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 libfapi = misc.load_library('libfapi')
+libcapi = misc.load_library('libcapi')
 
 
 def rho_grad(self,point):
@@ -178,6 +179,7 @@ class BaderSurf(object):
         self.epsilon = 1e-4 
         self.step = 0.1
         self.mstep = 500
+        self.csurf = False
 ##################################################
 # don't modify the following attributes, they are not input options
         self.xnuc = None
@@ -316,48 +318,86 @@ class BaderSurf(object):
                 logger.info(self,'Setting xyrho for atom to imput coords')
                 self.xyzrho[i] = self.coords[i]
 
-        # 4) Compute surface
-        feval = 'surf_driver'
-        drv = getattr(libfapi, feval)
         backend = 1
         ct_ = numpy.asarray(self.grids[:,0], order='C')
         st_ = numpy.asarray(self.grids[:,1], order='C')
         cp_ = numpy.asarray(self.grids[:,2], order='C')
         sp_ = numpy.asarray(self.grids[:,3], order='C')
         angw_ = numpy.asarray(self.grids[:,4], order='C')
+        # 4) Compute surface
+        if (self.csurf):
+            #pass
+            feval = 'csurf_driver'
+            drv = getattr(libcapi, feval)
+            drv(ctypes.c_int(self.nmo),  
+                ctypes.c_int(self.nprims),  
+                self.icen.ctypes.data_as(ctypes.c_void_p), 
+                self.ityp.ctypes.data_as(ctypes.c_void_p), 
+                self.oexp.ctypes.data_as(ctypes.c_void_p), 
+                self.ngroup.ctypes.data_as(ctypes.c_void_p), 
+                self.nzexp.ctypes.data_as(ctypes.c_void_p), 
+                self.nuexp.ctypes.data_as(ctypes.c_void_p), 
+                self.rcutte.ctypes.data_as(ctypes.c_void_p), 
+                self.mo_coeff.ctypes.data_as(ctypes.c_void_p), 
+                self.mo_occ.ctypes.data_as(ctypes.c_void_p), 
+                ctypes.c_int(self.natm),  
+                self.coords.ctypes.data_as(ctypes.c_void_p), 
+                ctypes.c_int(self.npang),  
+                ctypes.c_int((self.inuc)),  
+                self.xyzrho.ctypes.data_as(ctypes.c_void_p), 
+                ct_.ctypes.data_as(ctypes.c_void_p),
+                st_.ctypes.data_as(ctypes.c_void_p),
+                cp_.ctypes.data_as(ctypes.c_void_p),
+                sp_.ctypes.data_as(ctypes.c_void_p),
+                ctypes.c_int(backend),
+                ctypes.c_int(self.ntrial), 
+                ctypes.c_double(self.epsiscp), 
+                ctypes.c_double(self.epsroot), 
+                ctypes.c_double(self.rmaxsurf), 
+                ctypes.c_double(self.epsilon), 
+                self.rpru.ctypes.data_as(ctypes.c_void_p),
+                ctypes.c_double(self.step), 
+                ctypes.c_int(self.mstep),
+                self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
+                self.rsurf.ctypes.data_as(ctypes.c_void_p))
+        else:
+            pass
+        feval = 'surf_driver'
+        drv = getattr(libfapi, feval)
         drv(ctypes.c_int(self.nmo), 
-                        ctypes.c_int(self.nprims),  
-                        self.icen.ctypes.data_as(ctypes.c_void_p), 
-                        self.ityp.ctypes.data_as(ctypes.c_void_p), 
-                        self.oexp.ctypes.data_as(ctypes.c_void_p), 
-                        self.ngroup.ctypes.data_as(ctypes.c_void_p), 
-                        self.nzexp.ctypes.data_as(ctypes.c_void_p), 
-                        self.nuexp.ctypes.data_as(ctypes.c_void_p), 
-                        self.rcutte.ctypes.data_as(ctypes.c_void_p), 
-                        self.mo_coeff.ctypes.data_as(ctypes.c_void_p), 
-                        self.mo_occ.ctypes.data_as(ctypes.c_void_p), 
-                        ctypes.c_int(self.natm),  
-                        self.coords.ctypes.data_as(ctypes.c_void_p), 
-                        ctypes.c_int(self.npang),  
-                        ctypes.c_int((self.inuc+1)),  
-                        self.xyzrho.ctypes.data_as(ctypes.c_void_p), 
-                        ctypes.c_char_p(self.chkfile),
-                        ct_.ctypes.data_as(ctypes.c_void_p),
-                        st_.ctypes.data_as(ctypes.c_void_p),
-                        cp_.ctypes.data_as(ctypes.c_void_p),
-                        sp_.ctypes.data_as(ctypes.c_void_p),
-                        angw_.ctypes.data_as(ctypes.c_void_p),
-                        ctypes.c_int(backend),
-                        ctypes.c_int(self.ntrial), 
-                        ctypes.c_double(self.epsiscp), 
-                        ctypes.c_double(self.epsroot), 
-                        ctypes.c_double(self.rmaxsurf), 
-                        ctypes.c_double(self.epsilon), 
-                        ctypes.c_double(self.rprimer), 
-                        ctypes.c_double(self.step), 
-                        ctypes.c_int(self.mstep),
-                        self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
-                        self.rsurf.ctypes.data_as(ctypes.c_void_p))
+            ctypes.c_int(self.nprims),  
+            self.icen.ctypes.data_as(ctypes.c_void_p), 
+            self.ityp.ctypes.data_as(ctypes.c_void_p), 
+            self.oexp.ctypes.data_as(ctypes.c_void_p), 
+            self.ngroup.ctypes.data_as(ctypes.c_void_p), 
+            self.nzexp.ctypes.data_as(ctypes.c_void_p), 
+            self.nuexp.ctypes.data_as(ctypes.c_void_p), 
+            self.rcutte.ctypes.data_as(ctypes.c_void_p), 
+            self.mo_coeff.ctypes.data_as(ctypes.c_void_p), 
+            self.mo_occ.ctypes.data_as(ctypes.c_void_p), 
+            ctypes.c_int(self.natm),  
+            self.coords.ctypes.data_as(ctypes.c_void_p), 
+            ctypes.c_int(self.npang),  
+            ctypes.c_int((self.inuc+1)),  
+            self.xyzrho.ctypes.data_as(ctypes.c_void_p), 
+            ctypes.c_char_p(self.chkfile),
+            ct_.ctypes.data_as(ctypes.c_void_p),
+            st_.ctypes.data_as(ctypes.c_void_p),
+            cp_.ctypes.data_as(ctypes.c_void_p),
+            sp_.ctypes.data_as(ctypes.c_void_p),
+            angw_.ctypes.data_as(ctypes.c_void_p),
+            ctypes.c_int(backend),
+            ctypes.c_int(self.ntrial), 
+            ctypes.c_double(self.epsiscp), 
+            ctypes.c_double(self.epsroot), 
+            ctypes.c_double(self.rmaxsurf), 
+            ctypes.c_double(self.epsilon), 
+            ctypes.c_double(self.rprimer), 
+            ctypes.c_double(self.step), 
+            ctypes.c_int(self.mstep),
+            self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
+            self.rsurf.ctypes.data_as(ctypes.c_void_p))
+
         self.rmin = 1000.0
         self.rmax = 0.0
         for i in range(self.npang):
@@ -384,7 +424,7 @@ class BaderSurf(object):
         logger.info(self,'Surface of atom %d saved',self.inuc)
         logger.timer(self,'BaderSurf build', t0)
         logger.info(self,'')
-
+    
         return self
 
     kernel = build
@@ -396,8 +436,9 @@ if __name__ == '__main__':
     surf.epsroot = 1e-5
     surf.verbose = 4
     surf.epsiscp = 0.220
-    surf.mstep = 120
+    surf.mstep = 240
     surf.inuc = 0
-    surf.npang = 5810
+    surf.npang = 14
+    surf.csurf = True
     surf.kernel()
  
