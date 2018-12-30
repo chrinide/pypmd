@@ -503,7 +503,6 @@ class Grids(object):
                    'becke_scheme', 'level'):
             self.coords = None
             self.weights = None
-            self.non0tab = None
         super(Grids, self).__setattr__(key, val)
 
     def dump_flags(self):

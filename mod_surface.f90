@@ -47,7 +47,7 @@ module mod_surface
   real(kind=rp), public :: angx_, angy_, angz_
   integer(kind=ip), public :: steeper_
 
-  public :: init_surf, surf, rotagrid, odeint, rkck
+  public :: init_surf, surf, rotagrid
   public :: allocate_space_for_surface, deallocate_space_for_surface
 
 contains
@@ -560,7 +560,9 @@ end subroutine
     npang_ = 5810
     rmaxsurf_ = 10.0_rp
     step_ = 0.1_rp
-    mstep_ = 100_ip
+    mstep_ = 140_ip
+    rotgrid_ = .false.
+    steeper_  = 1
 
   end subroutine
                                                                         

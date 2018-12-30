@@ -18,7 +18,7 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
   use mod_surface, only: init_surf, rlimsurf_, nlimsurf_, minter, epsilon_, &
                       xnuc_, inuc_, xyzrho_, npang_, rmaxsurf_, surf, epsroot_, &
                       allocate_space_for_surface, deallocate_space_for_surface, &
-                      epsiscp_, mstep_, ntrial_, steeper_, step_, rprimer_, odeint, rkck
+                      epsiscp_, mstep_, ntrial_, steeper_, step_, rprimer_
   implicit none
 
   integer(kind=ip), intent(in), value :: natm

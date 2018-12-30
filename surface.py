@@ -99,27 +99,6 @@ def rho_grad(self,point):
 
     return rho, grad, gradmod
 
-
-def checkcp(self, x, rho, gradmod):
-
-    iscp = False
-    nuc = -2
-
-    for i in range(self.natm):
-        r = numpy.linalg.norm(x-self.coords[i])
-        if (r < self.epsiscp):
-            iscp = True
-            nuc = i
-            return iscp, nuc
-
-    if (gradmod <= param.GRADEPS):
-        iscp = True
-        if (rho <= param.RHOEPS): 
-            nuc = -1
-
-    return iscp, nuc
-
-
 def gradrho(self, xpoint, h):
 
     h0 = h
@@ -128,7 +107,7 @@ def gradrho(self, xpoint, h):
     grdt = grad
     grdmodule = gradmod
 
-    while (grdmodule > 1e-8 and niter < self.mstep*3):
+    while (grdmodule > param.GRADEPS and niter < self.mstep):
         niter += 1
         ier = 1
         while (ier != 0):
@@ -178,7 +157,7 @@ class BaderSurf(object):
         self.backend = 'rkck'
         self.epsilon = 1e-4 
         self.step = 0.1
-        self.mstep = 500
+        self.mstep = 200
         self.csurf = False
 ##################################################
 # don't modify the following attributes, they are not input options
@@ -251,7 +230,6 @@ class BaderSurf(object):
 
         logger.info(self,'* Surface Info')
         logger.info(self,'Surface for nuc %d' % (self.inuc+1))
-        logger.info(self,'Nuclear coordinate %.6f  %.6f  %.6f', *self.xnuc)
         logger.info(self,'Rmaxsurface %.6f' % self.rmaxsurf)
         logger.info(self,'Npang points %d' % self.npang)
         logger.info(self,'Ntrial %d' % self.ntrial)
@@ -272,7 +250,6 @@ class BaderSurf(object):
         logger.TIMER_LEVEL = 3
 
         # 1) Read info
-        logger.info(self,'Reading HDF5 file')
         with h5py.File(self.chkfile) as f:
             self.natm = f['molecule/natm'].value
             self.coords = f['molecule/coords'].value
@@ -295,7 +272,6 @@ class BaderSurf(object):
         self.rpru = numpy.zeros((self.ntrial))
         for i in range(self.ntrial): 
             self.rpru[i] = self.rprimer*numpy.power(geofac,(i+1)-1)
-        self.xnuc = numpy.asarray(self.coords[self.inuc])
         self.rsurf = numpy.zeros((self.npang,self.ntrial))
         self.nlimsurf = numpy.zeros((self.npang), dtype=numpy.int32)
         self.grids = grids.lebgrid(self.npang)
@@ -305,18 +281,21 @@ class BaderSurf(object):
             self.dump_input()
 
         # 3) Check rho nuclear atractors
+        step = self.step
         self.xyzrho = numpy.zeros((self.natm,3))
         for i in range(self.natm):
-            self.xyzrho[i], gradmod = gradrho(self,self.coords[i],self.step)
+            coords = self.coords[i]
+            self.xyzrho[i], gradmod = gradrho(self,coords,step)
             if (gradmod > 1e-4):
                 if (self.charges[i] > 2.0):
-                    logger.info(self,'Check rho position %.6f %.6f %.6f', *self.xyzrho[i])
+                    logger.info(self,'Good rho position %.6f %.6f %.6f', *self.xyzrho[i])
                 else:
                     raise RuntimeError('Failed finding nucleus:', *self.xyzrho[i]) 
             else:
                 logger.info(self,'Check rho position %.6f %.6f %.6f', *self.xyzrho[i])
                 logger.info(self,'Setting xyrho for atom to imput coords')
                 self.xyzrho[i] = self.coords[i]
+        self.xnuc = numpy.asarray(self.xyzrho[self.inuc])
 
         backend = 1
         ct_ = numpy.asarray(self.grids[:,0], order='C')

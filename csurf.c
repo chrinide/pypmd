@@ -426,7 +426,7 @@ void rkqs(double *y, double *dydx, double *x,
 	}
 }
 
-void steeper_rkck(double *xpoint, double *grdt, double h0, double *xout, double *xerr){
+inline void steeper_rkck(double *xpoint, double *grdt, double h0, double *xout, double *xerr){
 
   static const double b21 = 1.0/5.0;
   static const double b31 = 3.0/40.0;
@@ -825,7 +825,7 @@ void init_nlm(){
   nlm[55][2] = 0;
 }
 
-void cerror(const char *text){
+inline void cerror(const char *text){
 	fprintf(stderr,"Error %s\n", text);
 	exit(1);
 }
