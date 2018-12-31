@@ -23,8 +23,8 @@ mol.build()
 mf = dft.RKS(mol)
 mf.chkfile = name+'.chk'
 mf.max_cycle = 150
-mf.grids.atom_grid = {'H': (20,110), 'O': (20,110)}
-mf.grids.prune = None
+#mf.grids.atom_grid = {'H': (20,110), 'O': (20,110)}
+#mf.grids.prune = None
 mf.xc = 'rpw86,pbe'
 mf.kernel()
 
@@ -46,6 +46,42 @@ ex, vx = dft.libxc.eval_xc('rPW86,', rho)[:2]
 ec, vc = dft.libxc.eval_xc(',PBE', rho)[:2]
 ex = numpy.einsum('i,i,i->', ex, rho[0], weights)
 ec = numpy.einsum('i,i,i->', ec, rho[0], weights)
+
+gnorm2 = numpy.zeros(ngrids)
+for i in range(ngrids):
+    gnorm2[i] = numpy.linalg.norm(rho[-3:,i])**2
+coef_C = 0.0093
+coef_B = 5.9
+coef_beta = 1.0/32.0 * (3.0/(coef_B**2.0))**(3.0/4.0)
+kappa_pref = coef_B * (1.5*numpy.pi)/((9.0*numpy.pi)**(1.0/6.0))
+const = 4.0/3.0 * numpy.pi
+vv10_e = 0.0
+t = time.time()
+for idx1 in range(ngrids):
+    point1 = coords[idx1,:]
+    rho1 = rho[0,idx1]
+    weigth1 = weights[idx1]
+    gamma1 = gnorm2[idx1]
+    Wp1 = const*rho1
+    Wg1 = coef_C * ((gamma1/(rho1*rho1))**2.0)
+    W01 = numpy.sqrt(Wg1 + Wp1)
+    kappa1 = rho1**(1.0/6.0)*kappa_pref
+    #
+    R =  (point1[0]-coords[:,0])**2
+    R += (point1[1]-coords[:,1])**2
+    R += (point1[2]-coords[:,2])**2
+    Wp2 = const*rho[0]
+    Wg2 = coef_C * ((gnorm2/(rho[0]*rho[0]))**2.0)
+    W02 = numpy.sqrt(Wg2 + Wp2)
+    kappa2 = rho[0]**(1.0/6.0)*kappa_pref
+    g = W01*R + kappa1
+    gp = W02*R + kappa2
+    kernel12 = -1.5*weights*rho[0]/(g*gp*(g+gp))
+    # Energy 
+    kernel = kernel12.sum()
+    vv10_e += weigth1*rho1*(coef_beta + 0.5*kernel)
+lib.logger.info(mf,'VV10 = %.12f' % vv10_e)
+lib.logger.info(mf,'Total time taken VV10: %.3f seconds' % (time.time()-t))
 
 s = mol.intor('int1e_ovlp')
 t = mol.intor('int1e_kin')
@@ -87,7 +123,7 @@ System: ('Linux', 'cromo', '4.9.0-0.bpo.3-amd64', '#1 SMP Debian 4.9.30-2+deb9u5
 Python 2.7.14 (default, Apr 10 2018, 19:21:27) 
 [GCC 7.3.0]
 numpy 1.15.4  scipy 1.2.0
-Date: Mon Dec 31 03:45:04 2018
+Date: Mon Dec 31 19:25:49 2018
 PySCF version 1.6b
 PySCF path  /home/jluis/src/pyscf/dev/pyscf
 GIT ORIG_HEAD 26de5e7c8230210833f9d25fbbcde03cf2076fdc
@@ -141,44 +177,45 @@ radial grids:
     Treutler-Ahlrichs (JCP 102, 346 (M4)) radial grids
     
 becke partition: Becke, JCP, 88, 2547 (1988)
-pruning grids: None
+pruning grids: <function nwchem_prune at 0x2adbf9ea41b8>
 grids dens level: 3
 symmetrized grids: 1
-atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x2b2fa29d40c8>
-User specified grid scheme {'H': (20, 110), 'O': (20, 110)}
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x2adbf9ea40c8>
 Freeze 0 electrons in irreps []
     10 free electrons in irreps A1 B1 B2
 Set gradient conv threshold to 3.16228e-05
-tot grids = 6600
-init E= -76.2296161627816
-HOMO (B2) = -0.326586482439764  LUMO (A1) = 0.214709447496429
-cycle= 1 E= -76.0839301804198  delta_E= 0.146  |g|= 0.483  |ddm|= 1.67
-HOMO (B2) = 0.0819636256176333  LUMO (A1) = 0.363483749383423
-cycle= 2 E= -76.0792256558162  delta_E= 0.0047  |g|= 0.505  |ddm|= 1.43
-HOMO (B2) = -0.0759386125167973  LUMO (A1) = 0.290800475825433
-cycle= 3 E= -76.1657338743611  delta_E= -0.0865  |g|= 0.00322  |ddm|= 0.761
-HOMO (B2) = -0.0789067610177859  LUMO (A1) = 0.28691919631486
-cycle= 4 E= -76.1657373925608  delta_E= -3.52e-06  |g|= 0.000607  |ddm|= 0.00615
-HOMO (B2) = -0.0790711159239477  LUMO (A1) = 0.286855097822964
-cycle= 5 E= -76.165737528176  delta_E= -1.36e-07  |g|= 1.36e-05  |ddm|= 0.00106
-HOMO (B2) = -0.079077452430627  LUMO (A1) = 0.286849509417087
-cycle= 6 E= -76.1657375282364  delta_E= -6.04e-11  |g|= 5.77e-07  |ddm|= 1.82e-05
-HOMO (B2) = -0.0790778881201755  LUMO (A1) = 0.28684936558979
-Extra cycle  E= -76.1657375282365  delta_E= -9.95e-14  |g|= 5.98e-07  |ddm|= 1.68e-06
-converged SCF energy = -76.1657375282365
-Rho = 10.000324217211
+tot grids = 34310
+init E= -76.2290131755788
+HOMO (B2) = -0.328203417936797  LUMO (A1) = 0.213520849359459
+cycle= 1 E= -76.0828938445881  delta_E= 0.146  |g|= 0.485  |ddm|= 1.67
+HOMO (B2) = 0.0825786260108901  LUMO (A1) = 0.363167105206022
+cycle= 2 E= -76.0782791488399  delta_E= 0.00461  |g|= 0.506  |ddm|= 1.44
+HOMO (B2) = -0.0764749328064706  LUMO (A1) = 0.290375641520621
+cycle= 3 E= -76.1656375001627  delta_E= -0.0874  |g|= 0.00321  |ddm|= 0.767
+HOMO (B2) = -0.0794018820130967  LUMO (A1) = 0.286320527999361
+cycle= 4 E= -76.1656410318611  delta_E= -3.53e-06  |g|= 0.000674  |ddm|= 0.0065
+HOMO (B2) = -0.0795737406356606  LUMO (A1) = 0.286266413416427
+cycle= 5 E= -76.1656412003026  delta_E= -1.68e-07  |g|= 1.8e-05  |ddm|= 0.00118
+HOMO (B2) = -0.0795814098247483  LUMO (A1) = 0.286259708553989
+cycle= 6 E= -76.1656412004087  delta_E= -1.06e-10  |g|= 8.13e-07  |ddm|= 2.44e-05
+HOMO (B2) = -0.0795820294876544  LUMO (A1) = 0.286259447675357
+Extra cycle  E= -76.1656412004087  delta_E= 1.42e-14  |g|= 8.44e-07  |ddm|= 2.35e-06
+converged SCF energy = -76.1656412004087
+Rho = 9.999999873617
+VV10 = 0.044015828824
+Total time taken VV10: 61.010 seconds
 Population :    10.000000
-Kinetic energy :    75.939279
-Nuclear Atraction energy :  -199.064944
+Kinetic energy :    75.943631
+Nuclear Atraction energy :  -199.074841
 Nuclear Repulsion energy :     9.149859
 Coulomb Pairs :   100.000000
 XC Pairs :    10.000000
 Pairs :    90.000000
-J energy :    47.432515
-XC energy :    -9.134969
-EE energy :    38.297546
-HF Total energy :   -75.678260
-Ex :    -9.282123
-Ec :    -0.340323
-Exc :    -9.622446
-DFT Total energy :   -76.165738
+J energy :    47.438678
+XC energy :    -9.135560
+EE energy :    38.303118
+HF Total energy :   -75.678233
+Ex :    -9.282046
+Ec :    -0.340922
+Exc :    -9.622968
+DFT Total energy :   -76.165641
