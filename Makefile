@@ -15,7 +15,7 @@ all: libfapi.so libcapi.so libgapi.so
  
 FOBJECTS = mod_prec.o mod_io.o mod_memory.o mod_param.o mod_futils.o \
 mod_math.o mod_mole.o mod_basis.o mod_gto.o mod_fields.o mod_surface.o \
-mod_atomic.o numint.o surface.o fields.o lebgrid.o atomic.o
+mod_atomic.o numint.o surface.o fields.o lebgrid.o atomic.o gto.o
 
 COBJECTS = csurf.o cleb.o
 
