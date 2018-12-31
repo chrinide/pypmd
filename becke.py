@@ -14,6 +14,7 @@ import data
 import chkfile
 import grids
 import misc
+import numint
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -38,6 +39,8 @@ class Becke(object):
 ##################################################
 # don't modify the following attributes, they are not input options
         self.natm = None
+        self.charges = None
+        self.symbols = None
         self.coords = None
         self.nmo = None
         self.nprims = None
@@ -69,7 +72,8 @@ class Becke(object):
         logger.info(self,'Num atoms %d' % self.natm)
         logger.info(self,'Atom Coordinates (Bohr)')
         for i in range(self.natm):
-            logger.info(self,'Nuclei %d position : %.6f  %.6f  %.6f', i, *self.coords[i])
+            logger.info(self,'Nuclei %d %s with charge %d position : %.6f  %.6f  %.6f', i, 
+                        self.symbols[i], self.charges[i], *self.coords[i])
 
         logger.info(self,'* Basis Info')
         logger.info(self,'Number of Orbitals %d' % self.nmo)
@@ -93,6 +97,7 @@ class Becke(object):
                 (param.LTYPE[isu],zz,numpy.sqrt(x1),self.nuexp[m, :nzicm, ic]))
         logger.debug(self,'Number of shells of each type %s' % ntfu)
         logger.debug(self,'Ocupation of molecular orbitals %s' % self.mo_occ)
+        logger.info(self,'')
 
         return self
 
@@ -112,6 +117,8 @@ class Becke(object):
         with h5py.File(self.chkfile) as f:
             self.natm = f['molecule/natm'].value
             self.coords = f['molecule/coords'].value
+            self.charges = f['molecule/charges'].value
+            self.symbols = f['molecule/symbols'].value
             self.nmo = f['basis/nmo'].value
             self.nprims = f['basis/nprims'].value
             self.icen = f['basis/icen'].value
@@ -128,31 +135,43 @@ class Becke(object):
         if self.verbose > logger.NOTE:
             self.dump_input()
 
+        # 3) Qualitie of grid
+        rho = numint.eval_rho(self,self.grids.coords)
+        rhoval = numpy.einsum('i,i->',rho,self.grids.weights)
+        logger.info(self,'Integral of rho %.6f' % rhoval)
+
+        # 4) Promolecular density and weights
+        logger.info(self,'Getting atomic data from tabulated densities')
         npoints = len(self.grids.weights)
-        if (self.gpu):
-            feval = 'gpu_info'
-            drv = getattr(libgapi, feval)
-            drv()
-        else:
-            feval = 'becke_driver'
-            drv = getattr(libfapi, feval)
-            drv(ctypes.c_int(self.nmo), 
-                ctypes.c_int(self.nprims),  
-                self.icen.ctypes.data_as(ctypes.c_void_p), 
-                self.ityp.ctypes.data_as(ctypes.c_void_p), 
-                self.oexp.ctypes.data_as(ctypes.c_void_p), 
-                self.ngroup.ctypes.data_as(ctypes.c_void_p), 
-                self.nzexp.ctypes.data_as(ctypes.c_void_p), 
-                self.nuexp.ctypes.data_as(ctypes.c_void_p), 
-                self.rcutte.ctypes.data_as(ctypes.c_void_p), 
-                self.mo_coeff.ctypes.data_as(ctypes.c_void_p), 
-                self.mo_occ.ctypes.data_as(ctypes.c_void_p), 
-                ctypes.c_int(self.natm),  
-                self.coords.ctypes.data_as(ctypes.c_void_p), 
-                ctypes.c_int(npoints),  
-                self.grids.coords.ctypes.data_as(ctypes.c_void_p),
-                self.grids.weights.ctypes.data_as(ctypes.c_void_p))
-        
+        output = numpy.zeros(npoints)
+        promol = numpy.zeros(npoints)
+        ftmp = misc.H5TmpFile()
+        rhoat = 0.0
+        for i in range(self.natm):
+            libfapi.atomic(ctypes.c_int(npoints),  
+                           ctypes.c_int(self.charges[i]),  
+                           self.coords[i].ctypes.data_as(ctypes.c_void_p), 
+                           self.grids.coords.ctypes.data_as(ctypes.c_void_p), 
+                           output.ctypes.data_as(ctypes.c_void_p))
+            h5dat = ftmp.create_dataset('atom'+str(i), (npoints,), 'f8')
+            h5dat[:] = output[:]
+            rhoa = numpy.einsum('i,i->',output,self.grids.weights)
+            rhoat += rhoa
+            promol += output
+            logger.info(self,'Integral of rho for atom %d %.6f' % (i, rhoa))
+        logger.info(self,'Integral of rho promolecular %.6f' % rhoat)
+        for i in range(self.natm):
+            h5dat = ftmp.create_dataset('weight'+str(i), (npoints,), 'f8')
+            h5dat[:] = ftmp['atom'+str(i)][:]/(promol+param.HMINIMAL)
+
+        # 5) Atomic partition
+        atomq = numpy.zeros(self.natm)
+        hirshfeld = numpy.zeros(npoints)
+        for i in range(self.natm):
+            hirshfeld[:] = ftmp['weight'+str(i)]
+            atomq[i] = numpy.einsum('i,i->',rho,self.grids.weights*hirshfeld)
+            logger.info(self,'Charge of atom %d %.6f' % (i,atomq[i]))
+
         logger.timer(self,'Becke integration done', t0)
         logger.info(self,'')
 
@@ -164,7 +183,8 @@ if __name__ == '__main__':
     name = 'h2o.wfn.h5'
     becke = Becke(name)
     becke.verbose = 4
-    becke.grids.level = 3
+    becke.grids.level = 4
+    becke.grids.prune = 0
     becke.kernel()
 
     from pyscf import lib, dft

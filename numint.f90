@@ -1,9 +1,8 @@
-subroutine becke_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
+subroutine eval_rho(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
                         nuexp, rcutte, mo_coeff, mo_occ, natm, coords, &
-                        npoints, points, weights) bind(c)
+                        npoints, points, output) bind(c)
 
   use mod_prec, only: rp, ip
-  use iso_fortran_env, only: uout=>output_unit
   use mod_param, only: init_param
   use mod_mole, only: ncent_, coords_, allocate_space_for_mole, &
                                        deallocate_space_for_mole
@@ -11,7 +10,7 @@ subroutine becke_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
                        coeff_, oexp_, occ_, icen_, ityp_, nzexp_, nuexp_, & 
                        deallocate_space_for_basis, ngroup_, mgrp, ngtoh, &
                        rcutte_
-  use mod_fields, only: rho_grad=>density_grad_shell
+  use mod_fields, only: rho_shell=>density_shell
   implicit none
 
   integer(kind=ip), intent(in), value :: natm
@@ -32,10 +31,10 @@ subroutine becke_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
 
   integer(kind=ip), intent(in), value :: npoints
   real(kind=rp), intent(in), dimension(3,npoints) :: points
-  real(kind=rp), intent(in), dimension(npoints) :: weights
+  real(kind=rp), intent(out), dimension(npoints) :: output
 
-  real(kind=rp) :: rho, trho, grad(3), gradmod
   integer(kind=ip) :: i
+  real(kind=rp) :: rho
 
   call init_param ()
   call init_basis ()
@@ -60,14 +59,18 @@ subroutine becke_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
   rcutte_ = rcutte
   nuexp_ = nuexp
 
-  rho = 0.0_rp
+  !$omp parallel do &
+  !$omp default(none) &
+  !$omp private(i,rho) & 
+  !$omp shared(npoints,output,points) &
+  !$omp schedule(dynamic) 
   do i = 1,npoints
-    call rho_grad (points(:,i),trho,grad,gradmod)
-    rho = rho + trho*weights(i)
+    call rho_shell(points(:,i),rho)
+    output(i) = rho
   end do
-  write (*,*) "Rho",rho
+  !$omp end parallel do
 
   call deallocate_space_for_basis ()
   call deallocate_space_for_mole ()
 
-end subroutine becke_driver
+end subroutine eval_rho

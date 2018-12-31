@@ -77,6 +77,13 @@ LEBEDEV_NGRID = numpy.asarray((
     1202, 1454, 1730, 2030, 2354, 2702, 3074, 3470, 3890, 4334,
     4802, 5294, 5810))
 
+# P.M.W. Gill, B.G. Johnson, J.A. Pople, Chem. Phys. Letters 209 (1993) 506-512
+SG1RADII = numpy.array((
+    0,
+    1.0000,                                                 0.5882,
+    3.0769, 2.0513, 1.5385, 1.2308, 1.0256, 0.8791, 0.7692, 0.6838,
+    4.0909, 3.1579, 2.5714, 2.1687, 1.8750, 1.6514, 1.4754, 1.3333))
+
 #########################
 # JCP 41 3199 (1964).
 BRAGG = 1.0/param.BOHR * numpy.array((0,  # Ghost atom
@@ -126,6 +133,113 @@ COVALENT = 1.0/param.BOHR * numpy.array((0,  # Ghost atom
                     1.45, 1.46, 1.48, 1.40, 1.50, 1.50,             # 6p
         2.60, 2.21,                                                 # 7s
         2.15, 2.06, 2.00, 1.96, 1.90, 1.87, 1.80, 1.69))
+
+def sg1_prune(nuc, rads, n_ang, radii=SG1RADII):
+    '''SG1, CPL, 209, 506
+
+    Args:
+        nuc : int
+            Nuclear charge.
+
+        rads : 1D array
+            Grid coordinates on radical axis.
+
+        n_ang : int
+            Max number of grids over angular part.
+
+    Kwargs:
+        radii : 1D array
+            radii (in Bohr) for atoms in periodic table
+
+    Returns:
+        A list has the same length as rads. The list element is the number of
+        grids over angular part for each radial grid.
+    '''
+# In SG1 the ang grids for the five regions
+#            6  38 86  194 86
+    leb_ngrid = numpy.array([6, 38, 86, 194, 86])
+    alphas = numpy.array((
+        (0.25  , 0.5, 1.0, 4.5),
+        (0.1667, 0.5, 0.9, 3.5),
+        (0.1   , 0.4, 0.8, 2.5)))
+    r_atom = radii[nuc] + 1e-200
+    if nuc <= 2:  # H, He
+        place = ((rads/r_atom).reshape(-1,1) > alphas[0]).sum(axis=1)
+    elif nuc <= 10:  # Li - Ne
+        place = ((rads/r_atom).reshape(-1,1) > alphas[1]).sum(axis=1)
+    else:
+        place = ((rads/r_atom).reshape(-1,1) > alphas[2]).sum(axis=1)
+    return leb_ngrid[place]
+
+def nwchem_prune(nuc, rads, n_ang, radii=BRAGG):
+    '''NWChem
+
+    Args:
+        nuc : int
+            Nuclear charge.
+
+        rads : 1D array
+            Grid coordinates on radical axis.
+
+        n_ang : int
+            Max number of grids over angular part.
+
+    Kwargs:
+        radii : 1D array
+            radii (in Bohr) for atoms in periodic table
+
+    Returns:
+        A list has the same length as rads. The list element is the number of
+        grids over angular part for each radial grid.
+    '''
+    alphas = numpy.array((
+        (0.25  , 0.5, 1.0, 4.5),
+        (0.1667, 0.5, 0.9, 3.5),
+        (0.1   , 0.4, 0.8, 2.5)))
+    leb_ngrid = LEBEDEV_NGRID[4:]  # [38, 50, 74, 86, ...]
+    if n_ang < 50:
+        return numpy.repeat(n_ang, len(rads))
+    elif n_ang == 50:
+        leb_l = numpy.array([1, 2, 2, 2, 1])
+    else:
+        idx = numpy.where(leb_ngrid==n_ang)[0][0]
+        leb_l = numpy.array([1, 3, idx-1, idx, idx-1])
+
+    r_atom = radii[nuc] + 1e-200
+    if nuc <= 2:  # H, He
+        place = ((rads/r_atom).reshape(-1,1) > alphas[0]).sum(axis=1)
+    elif nuc <= 10:  # Li - Ne
+        place = ((rads/r_atom).reshape(-1,1) > alphas[1]).sum(axis=1)
+    else:
+        place = ((rads/r_atom).reshape(-1,1) > alphas[2]).sum(axis=1)
+    angs = leb_l[place]
+    angs = leb_ngrid[angs]
+    return angs
+
+# Prune scheme JCP 102, 346
+def treutler_prune(nuc, rads, n_ang, radii=None):
+    '''Treutler-Ahlrichs
+
+    Args:
+        nuc : int
+            Nuclear charge.
+
+        rads : 1D array
+            Grid coordinates on radical axis.
+
+        n_ang : int
+            Max number of grids over angular part.
+
+    Returns:
+        A list has the same length as rads. The list element is the number of
+        grids over angular part for each radial grid.
+    '''
+    nr = len(rads)
+    leb_ngrid = numpy.empty(nr, dtype=int)
+    leb_ngrid[:nr//3] = 14 # l=5
+    leb_ngrid[nr//3:nr//2] = 50 # l=11
+    leb_ngrid[nr//2:] = n_ang
+    return leb_ngrid
 
 def stratmann(g):
     '''Stratmann, Scuseria, Frisch. CPL, 257, 213 (1996)'''
@@ -326,7 +440,8 @@ def prange(start, end, step):
     for i in range(start, end, step):
         yield i, min(i+step, end)
 
-def gen_atomic_grids(self, atom_grid={}, radi_method=gauss_chebyshev, level=3, **kwargs):
+def gen_atomic_grids(self, atom_grid={}, radi_method=gauss_chebyshev, level=3, 
+                     prune=nwchem_prune, **kwargs):
     '''Generate number of radial grids and angular grids for the given molecule.
 
     Returns:
@@ -359,7 +474,11 @@ def gen_atomic_grids(self, atom_grid={}, radi_method=gauss_chebyshev, level=3, *
                 n_ang = _default_ang(chg, level)
             rad, dr = radi_method(n_rad, chg, ia, **kwargs)
             rad_weight = 4.0*numpy.pi * rad**2 * dr
-            angs = [n_ang] * n_rad
+
+            if callable(prune):
+                angs = prune(chg, rad, n_ang)
+            else:
+                angs = [n_ang] * n_rad
             logger.debug(self,'atom %s rad-grids = %d, ang-grids = %s', symb, n_rad, angs)
 
             angs = numpy.array(angs)
@@ -462,6 +581,13 @@ class Grids(object):
             | original_becke  (default)
             | stratmann
 
+        prune : function(nuc, rad_grids, n_ang) => list_n_ang_for_each_rad_grid
+            scheme to reduce number of grids, can be one of
+            | gen_grid.nwchem_prune  (default)
+            | gen_grid.sg1_prune
+            | gen_grid.treutler_prune
+            | None : to switch off grid pruning
+
         atom_grid : dict
             Set (radial, angular) grids for particular atoms.
             Eg, grids.atom_grid = {'H': (20,110)} will generate 20 radial
@@ -488,6 +614,7 @@ class Grids(object):
         self.radii_adjust = treutler_atomic_radii_adjust
         self.radi_method =  treutler
         self.becke_scheme = original_becke
+        self.prune = nwchem_prune 
 ##################################################
 # don't modify the following attributes, they are not input options
         self.xyz = None
@@ -500,7 +627,7 @@ class Grids(object):
 
     def __setattr__(self, key, val):
         if key in ('atom_grid', 'atomic_radii', 'radii_adjust', 'radi_method',
-                   'becke_scheme', 'level'):
+                   'becke_scheme', 'prune', 'level'):
             self.coords = None
             self.weights = None
         super(Grids, self).__setattr__(key, val)
@@ -527,6 +654,7 @@ class Grids(object):
         logger.info(self,'* Grid Info')
         logger.info(self,'radial grids: %s', self.radi_method)
         logger.info(self,'becke partition: %s', self.becke_scheme)
+        logger.info(self,'pruning grids: %s', self.prune)
         logger.info(self,'grids dens level: %d', self.level)
         if self.radii_adjust is not None:
             logger.info(self,'atomic radii adjust function: %s',
@@ -558,7 +686,8 @@ class Grids(object):
         # 3) Gen grids
         atom_grids_tab = gen_atomic_grids(self,self.atom_grid,
                                                self.radi_method,
-                                               self.level, **kwargs)
+                                               self.level, 
+                                               self.prune, **kwargs)
         self.coords, self.weights = \
                 gen_partition(self,atom_grids_tab,
                                    self.radii_adjust, self.atomic_radii,
@@ -591,6 +720,7 @@ if __name__ == '__main__':
     name = 'h2o.wfn.h5'
     g = Grids(name)
     g.verbose = 4
+    g.prune = None
     g.build()
     print(g.coords.shape)
     with open('bgrid.txt', 'w') as f2:

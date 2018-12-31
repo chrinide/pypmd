@@ -43,19 +43,17 @@ extern "C" {
     printf("  Total global memory: %u\n", prop.totalGlobalMem);
     printf("  Total shared memory per block: %u\n", prop.sharedMemPerBlock);
     printf("  Total registers per block: %d\n", prop.regsPerBlock);
-    printf("  Memory Clock Rate (KHz): %d\n",
-           prop.memoryClockRate);
-    printf("  Memory Bus Width (bits): %d\n",
-           prop.memoryBusWidth);
+    printf("  Memory Clock Rate (KHz): %d\n", prop.memoryClockRate);
+    printf("  Memory Bus Width (bits): %d\n", prop.memoryBusWidth);
     printf("  Peak Memory Bandwidth (GB/s): %f\n",
            2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
     printf("  Warp size: %d\n", prop.warpSize);
     printf("  Maximum memory pitch: %u\n", prop.memPitch);
     printf("  Maximum threads per block: %d\n", prop.maxThreadsPerBlock);
     for (j=0; j<3; ++j)
-    printf("  Maximum dimension %d of block: %d\n", j, prop.maxThreadsDim[j]);
+    	printf("  Maximum dimension %d of block: %d\n", j, prop.maxThreadsDim[j]);
     for (j=0; j<3; ++j)
-    printf("  Maximum dimension %d of grid: %d\n", j, prop.maxGridSize[j]);
+    	printf("  Maximum dimension %d of grid: %d\n", j, prop.maxGridSize[j]);
     printf("  Clock rate (KHz): %d\n", prop.clockRate);
     printf("  Total constant memory: %u\n", prop.totalConstMem);
     printf("  Texture alignment: %u\n", prop.textureAlignment);
