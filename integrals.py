@@ -13,6 +13,7 @@ import data
 import chkfile
 import misc
 import gto
+import tools
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -21,51 +22,6 @@ libfapi = misc.load_library('libfapi')
 # For code compatiblity in python-2 and python-3
 if sys.version_info >= (3,):
     unicode = str
-
-BASE = 0
-OUTPUT_COLS = 5
-OUTPUT_DIGITS = 5
-
-def dump_tri(stdout, c, ncol=OUTPUT_COLS, digits=OUTPUT_DIGITS, start=BASE):
-    ''' Format print for the lower triangular part of an array
-
-    Args:
-        stdout : file object
-            eg sys.stdout, or stdout = open('/path/to/file') or
-            mol.stdout if mol is an object initialized from :class:`gto.Mole`
-        c : numpy.ndarray
-            coefficients
-
-    Kwargs:
-        ncol : int
-            Number of columns in the format output (default 5)
-        digits : int
-            Number of digits of precision for floating point output (default 5)
-        start : int
-            The number to start to count the index (default 0)
-
-    Examples:
-
-        >>> import sys, numpy
-        >>> dm = numpy.eye(3)
-        >>> dump_tri(sys.stdout, dm)
-                #0        #1        #2   
-        0       1.00000
-        1       0.00000   1.00000
-        2       0.00000   0.00000   1.00000
-    '''
-    nc = c.shape[1]
-    for ic in range(0, nc, ncol):
-        dc = c[:,ic:ic+ncol]
-        m = dc.shape[1]
-        fmt = (' %%%d.%df'%(digits+4,digits))*m + '\n'
-        stdout.write(((' '*(digits+3))+'%s\n') % \
-                     (' '*(digits)).join(['#%-4d'%i for i in range(start+ic,start+ic+m)]))
-        for k, v in enumerate(dc[ic:ic+m]):
-            fmt = (' %%%d.%df'%(digits+4,digits))*(k+1) + '\n'
-            stdout.write(('%-5d' % (ic+k+start)) + (fmt % tuple(v[:k+1])))
-        for k, v in enumerate(dc[ic+m:]):
-            stdout.write(('%-5d' % (ic+m+k+start)) + (fmt % tuple(v)))
 
 class Integrals(object):
 
@@ -172,7 +128,7 @@ class Integrals(object):
         s = gto.eval_overlap(self)
         s = numpy.dot(s,self.mo_coeff)
         s = numpy.dot(self.mo_coeff.T,s)
-        dump_tri(self.stdout, s, ncol=OUTPUT_COLS, digits=OUTPUT_DIGITS, start=BASE) 
+        tools.dump_tri(self.stdout, s) 
         logger.info(self,'')
 
         logger.timer(self,'Integrals done', t0)
