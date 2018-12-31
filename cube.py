@@ -42,6 +42,7 @@ import time
 import h5py
 import numpy
 
+import tools
 import param
 import data
 import numint
@@ -205,7 +206,7 @@ class Cube(object):
         logger.info(self,'Number of nx,ny,nz %d %d %d' % (self.nx,self.ny,self.nz))
         logger.info(self,'Margin %d' % self.margin)
         logger.info(self,'Box origin %.6f %.6f %.6f', *self.boxorig)
-        #self.box = None
+        logger.info(self,'Box lenghts %.6f %.6f %.6f', *self.box)
         logger.info(self,'')
 
         return self
@@ -314,4 +315,5 @@ if __name__ == '__main__':
     cube = Cube(name)
     cube.verbose = 4
     cube.kernel()
+    tools.read_cube(name+'.cube')
 

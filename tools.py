@@ -105,6 +105,43 @@ def print_properties(name, natm):
     for j in range(NPROPS):
         log.info('Tot prop %s value : %8.5f', PROPS[j], totprops[j])
 
+def read_cube(filename):
+    log.info('Cube file is : %s' % (filename))
+    with open(filename, 'r') as fin:
+        comment1 = fin.readline() #save 1st comment
+        comment2 = fin.readline() #save 2nd comment
+        norigin = fin.readline().split() # number of atoms and origin
+        natoms = int(norigin[0]) #number of atoms
+        origin = numpy.array([float(norigin[1]),float(norigin[2]),float(norigin[3])]) #position of origin
+        nvoxel = fin.readline().split() #number of voxels
+        nx = int(nvoxel[0])
+        x = numpy.array([float(nvoxel[1]),float(nvoxel[2]),float(nvoxel[3])])
+        nvoxel = fin.readline().split() #
+        ny = int(nvoxel[0])
+        y = numpy.array([float(nvoxel[1]),float(nvoxel[2]),float(nvoxel[3])])
+        nvoxel = fin.readline().split() #
+        nz = int(nvoxel[0])
+        z = numpy.array([float(nvoxel[1]),float(nvoxel[2]),float(nvoxel[3])])
+        atoms = []
+        atomsxyz = []
+        for atom in range(natoms):
+            line= fin.readline().split()
+            atoms.append(line[0])
+            atomsxyz.append(map(float,[line[2], line[3], line[4]]))
+        data = numpy.zeros((nx,ny,nz))
+        i = 0
+        for s in fin:
+            for v in s.split():
+               data[i/(ny*nz),(i/nz)%ny,i%nz] = float(v)
+               i += 1
+        if (i != nx*ny*nz): 
+	    raise RuntimeError('wrong number points readed')
+
+    vol = numpy.linalg.det(numpy.array([x,y,z]))
+    edensity = numpy.sum(data)
+    nelectron = vol*edensity
+    log.info('Number of electrons: %.7g' % (nelectron))
+
 #del(BASE,OUTPUT_COLS,OUTPUT_DIGITS,NPROPS,PROPS)
 
 if __name__ == '__main__':
