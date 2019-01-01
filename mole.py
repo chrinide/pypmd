@@ -9,6 +9,7 @@ import ctypes
 import wfn
 import data
 import param
+import misc
 import chkfile
 import logger
 
@@ -144,6 +145,7 @@ class Mole(object):
         self.corr = False
         self.chkfile = datafile+'.h5'
         self.rdmfile = datafile+'.rdm1'
+        self.nthreads = misc.num_threads()
 ##################################################
 # don't modify the following attributes, they are not input options
         self.natm = None
@@ -179,6 +181,10 @@ class Mole(object):
         logger.info(self,'')
         logger.info(self,'******** %s flags ********', self.__class__)
         logger.info(self,'* General Info')
+        logger.info(self,'Date %s' % time.ctime())
+        logger.info(self,'Python %s' % sys.version)
+        logger.info(self,'Numpy %s' % numpy.__version__)
+        logger.info(self,'Number of threads %d' % self.nthreads)
         logger.info(self,'Verbose level %d' % self.verbose)
         logger.info(self,'Scratch dir %s' % self.scratch)
         logger.info(self,'Correlated calculation %s' % self.corr)

@@ -8,8 +8,8 @@ NFLAGS = -O3 -Xcompiler "-O3 -fPIC -mtune=native"
 FDEBUG = -Wpedantic -g -pg -Wunused -fbacktrace -fcheck=bounds,mem,pointer,do,array-temps -Wall
 CDEBUG = -Wpedantic -g -pg -Wunused -Wall
 LFLAGS = -shared
-FFLAGS = $(FDEBUG) -fpic -O3 -mtune=native -fopenmp
-CFLAGS = $(CDEBUG) -fpic -O3 -mtune=native -fopenmp
+FFLAGS = -fpic -O3 -mtune=native -fopenmp $(FDEBUG) 
+CFLAGS = -fpic -O3 -mtune=native -fopenmp $(CDEBUG) 
 
 all: libfapi.so libcapi.so libgapi.so 
  

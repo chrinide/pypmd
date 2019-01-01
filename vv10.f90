@@ -1,5 +1,5 @@
-real(kind=rp) function vv10_e(npoints, coef_c, coef_b, &
-                              points, rho, weights, gnorm2) bind(c) 
+real(kind=rp) function vv10(npoints, coef_c, coef_b, &
+                            points, rho, weights, gnorm2) bind(c) 
                     
   use mod_param, only: pi
   use mod_prec, only: rp, ip
@@ -19,10 +19,17 @@ real(kind=rp) function vv10_e(npoints, coef_c, coef_b, &
   real(kind=rp) :: px, py, pz, rho1, weight1, wp1, wg1, w01, kappa1, gamma1
   real(kind=rp) :: kernel, r, rho2, weight2, gamma2, wp2, wg2, w02, kappa2
 
-  vv10_e = 0.0_rp
+  vv10 = 0.0_rp
   coef_beta = 1.0/32.0*(3.0/(coef_B*coef_B))**(3.0/4.0)
   kappa_pref = coef_B*(1.5*pi)/ (9.0*pi)**(1.0/6.0)
 
+  !$omp parallel do &
+  !$omp default(none) &
+  !$omp private(jdx,r,rho2,weight2,gamma2,wp2,wg2,w02,kappa2,g,gp, &
+  !$omp idx,rho1,weight1,gamma1,wp1,wg1,w01,px,py,pz,kernel,kappa1) & 
+  !$omp reduction(+:vv10) &
+  !$omp shared(npoints,points,rho,weights,gnorm2,coef_c,kappa_pref,coef_beta) &
+  !$omp schedule(dynamic) 
   do idx = 1,npoints
     px = points(1,idx)
     py = points(2,idx)
@@ -50,9 +57,10 @@ real(kind=rp) function vv10_e(npoints, coef_c, coef_b, &
       gp = w02*r + kappa2 
       kernel = kernel - 1.5*weight2*rho2/(g*gp*(g+gp)) 
     end do
-    vv10_e = vv10_e + weight1*rho1*(coef_beta + 0.5*kernel) 
+    vv10 = vv10 + weight1*rho1*(coef_beta + 0.5*kernel) 
   end do
+  !$omp end parallel do
 
   return 
 
-end function vv10_e
+end function vv10

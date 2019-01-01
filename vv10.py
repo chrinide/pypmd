@@ -19,15 +19,16 @@ import numint
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 libfapi = misc.load_library('libfapi')
-libgapi = misc.load_library('libgapi')
 libcapi = misc.load_library('libcapi')
 
 # For code compatiblity in python-2 and python-3
 if sys.version_info >= (3,):
     unicode = str
 
-def vv10(self,rho,gnorm):        
+def p_vv10(self,rho,gnorm):        
+    t = time.time()
     npoints = len(rho)
+    logger.info(self,'Input npoints %d' % npoints)
     gnorm2 = numpy.zeros(npoints)
     for i in range(npoints):
         gnorm2[i] = gnorm[i]*gnorm[i]
@@ -38,6 +39,7 @@ def vv10(self,rho,gnorm):
     rho = rho[idx]
     gnorm2 = gnorm2[idx]
     ngrids = rho.shape[0]
+    logger.info(self,'Pruned npoints %d' % ngrids)
     coords = self.grids.coords[idx]
     weights = self.grids.weights[idx]
     vv10_e = 0.0
@@ -62,6 +64,8 @@ def vv10(self,rho,gnorm):
         kernel12 = -1.5*weights*rho/(g*gp*(g+gp))
         kernel = kernel12.sum()
         vv10_e += weigth1*rho1*(coef_beta + 0.5*kernel)
+    logger.info(self,'VV10 energy %.6f' % ev)
+    logger.info(self,'Total time taken VV10: %.3f seconds' % (time.time()-t))
     return vv10_e
 
 def c_vv10(self,rho,gnorm):        
@@ -88,6 +92,33 @@ def c_vv10(self,rho,gnorm):
          gnorm2.ctypes.data_as(ctypes.c_void_p))
     logger.info(self,'VV10 energy %.6f' % ev)
     logger.info(self,'Total time taken VV10 (C): %.3f seconds' % (time.time()-t))
+    return self
+
+def f_vv10(self,rho,gnorm):        
+    t = time.time()
+    npoints = len(rho)
+    logger.info(self,'Input npoints %d' % npoints)
+    gnorm2 = numpy.zeros(npoints)
+    for i in range(npoints):
+        gnorm2[i] = gnorm[i]*gnorm[i]
+    libfapi.vv10.restype = ctypes.c_double
+    idx = numpy.nonzero(rho)
+    rho = rho[idx]
+    gnorm2 = gnorm2[idx]
+    ngrids = rho.shape[0]
+    logger.info(self,'Pruned npoints %d' % ngrids)
+    coords = self.grids.coords[idx]
+    weights = self.grids.weights[idx]
+    ev = libfapi.vv10(ctypes.c_int(ngrids),
+         ctypes.c_double(self.coef_C),
+         ctypes.c_double(self.coef_B),
+         coords.ctypes.data_as(ctypes.c_void_p),
+         rho.ctypes.data_as(ctypes.c_void_p),
+         weights.ctypes.data_as(ctypes.c_void_p),
+         gnorm2.ctypes.data_as(ctypes.c_void_p))
+    logger.info(self,'VV10 energy %.6f' % ev)
+    logger.info(self,'Total time taken VV10 (F): %.3f seconds' % (time.time()-t))
+    return self
 
 class Disp(object):
 
@@ -102,6 +133,7 @@ class Disp(object):
         self.coef_C = 0.0093
         self.coef_B = 5.9
         self.gpu = False
+        self.nthreads = misc.num_threads()
 ##################################################
 # don't modify the following attributes, they are not input options
         self.natm = None
@@ -129,6 +161,10 @@ class Disp(object):
         logger.info(self,'')
         logger.info(self,'******** %s flags ********', self.__class__)
         logger.info(self,'* General Info')
+        logger.info(self,'Date %s' % time.ctime())
+        logger.info(self,'Python %s' % sys.version)
+        logger.info(self,'Numpy %s' % numpy.__version__)
+        logger.info(self,'Number of threads %d' % self.nthreads)
         logger.info(self,'Verbose level %d' % self.verbose)
         logger.info(self,'Scratch dir %s' % self.scratch)
         logger.info(self,'Input h5 data file %s' % self.chkfile)
@@ -211,10 +247,7 @@ class Disp(object):
         logger.info(self,'Integral of rho %.6f' % rhoval)
 
         # 4) Dispersion energy, TODO: prune rho points
-        #e = vv10(self,out[:,0],out[:,1]) 
-        #print e 
-        e = c_vv10(self,out[:,0],out[:,1]) 
-        print e 
+        f_vv10(self,out[:,0],out[:,1]) 
 
         logger.timer(self,'VV10 integration done', t0)
         logger.info(self,'')

@@ -159,6 +159,8 @@ class BaderSurf(object):
         self.step = 0.1
         self.mstep = 200
         self.csurf = False
+        self.nthreads = misc.num_threads()
+        self.gpu = False
 ##################################################
 # don't modify the following attributes, they are not input options
         self.xnuc = None
@@ -281,6 +283,7 @@ class BaderSurf(object):
             self.dump_input()
 
         # 3) Check rho nuclear atractors
+        t = time.time()
         step = self.step
         self.xyzrho = numpy.zeros((self.natm,3))
         for i in range(self.natm):
@@ -296,7 +299,9 @@ class BaderSurf(object):
                 logger.info(self,'Setting xyrho for atom to imput coords')
                 self.xyzrho[i] = self.coords[i]
         self.xnuc = numpy.asarray(self.xyzrho[self.inuc])
+        logger.info(self,'Time finding nucleus %.3f (sec)' % (time.time()-t))
 
+        t = time.time()
         backend = 1
         ct_ = numpy.asarray(self.grids[:,0], order='C')
         st_ = numpy.asarray(self.grids[:,1], order='C')
@@ -374,6 +379,7 @@ class BaderSurf(object):
                 ctypes.c_int(self.mstep),
                 self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
                 self.rsurf.ctypes.data_as(ctypes.c_void_p))
+        logger.info(self,'Time finding surface %.3f (sec)' % (time.time()-t))
 
         self.rmin = 1000.0
         self.rmax = 0.0
