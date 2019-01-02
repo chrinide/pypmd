@@ -172,5 +172,5 @@ if __name__ == '__main__':
     rho = dft.numint.eval_rho2(mol, ao, mf_mo_coeff, mf_mo_occ, xctype='GGA')
     rho = numpy.einsum('i,i->',rho[0],becke.grids.weights)
     logger.info(mol,'Integral of rho %.6f' % rho)
-    logger.timer(mol,'GPU integration done', t0)
+    logger.timer(mol,'CPU integration done', t0)
 
