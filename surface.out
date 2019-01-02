@@ -31,14 +31,14 @@ Check rho position 1.358950 0.000000 -0.832996
 Setting xyrho for atom to imput coords
 Check rho position -1.358950 0.000000 -0.832996
 Setting xyrho for atom to imput coords
-Time finding nucleus 0.527 (sec)
-Time finding surface 9.392 (sec)
+Time finding nucleus 0.498 (sec)
+Time finding surface 8.183 (sec)
 Rmin for surface 1.466935
 Rmax for surface 10.000000
 Finish with surface
 Write HDF5 surface file
 Surface of atom 0 saved
-    CPU time for BaderSurf build     38.20 sec
+    CPU time for BaderSurf build     33.32 sec
 
 
 ******** <class '__main__.BaderSurf'> flags ********
@@ -73,14 +73,14 @@ Check rho position 1.358950 0.000000 -0.832996
 Setting xyrho for atom to imput coords
 Check rho position -1.358950 0.000000 -0.832996
 Setting xyrho for atom to imput coords
-Time finding nucleus 0.528 (sec)
-Time finding surface 9.437 (sec)
+Time finding nucleus 0.500 (sec)
+Time finding surface 8.245 (sec)
 Rmin for surface 0.352640
 Rmax for surface 10.000000
 Finish with surface
 Write HDF5 surface file
 Surface of atom 1 saved
-    CPU time for BaderSurf build     38.90 sec
+    CPU time for BaderSurf build     34.11 sec
 
 
 ******** <class '__main__.BaderSurf'> flags ********
@@ -115,12 +115,12 @@ Check rho position 1.358950 0.000000 -0.832996
 Setting xyrho for atom to imput coords
 Check rho position -1.358950 0.000000 -0.832996
 Setting xyrho for atom to imput coords
-Time finding nucleus 0.541 (sec)
-Time finding surface 9.463 (sec)
+Time finding nucleus 0.501 (sec)
+Time finding surface 8.238 (sec)
 Rmin for surface 0.352640
 Rmax for surface 10.000000
 Finish with surface
 Write HDF5 surface file
 Surface of atom 2 saved
-    CPU time for BaderSurf build     39.00 sec
+    CPU time for BaderSurf build     34.07 sec
 

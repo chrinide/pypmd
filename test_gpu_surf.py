@@ -20,8 +20,7 @@ if sys.version_info >= (3,):
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-libfapi = misc.load_library('libfapi')
-libcapi = misc.load_library('libcapi')
+libgsurf = misc.load_library('libgsurf')
 
 
 def rho_grad(self,point):
@@ -309,76 +308,38 @@ class BaderSurf(object):
         sp_ = numpy.asarray(self.grids[:,3], order='C')
         angw_ = numpy.asarray(self.grids[:,4], order='C')
         # 4) Compute surface
-        if (self.csurf):
-            feval = 'csurf_driver'
-            drv = getattr(libcapi, feval)
-            drv(ctypes.c_int(self.nmo),  
-                ctypes.c_int(self.nprims),  
-                self.icen.ctypes.data_as(ctypes.c_void_p), 
-                self.ityp.ctypes.data_as(ctypes.c_void_p), 
-                self.oexp.ctypes.data_as(ctypes.c_void_p), 
-                self.ngroup.ctypes.data_as(ctypes.c_void_p), 
-                self.nzexp.ctypes.data_as(ctypes.c_void_p), 
-                self.nuexp.ctypes.data_as(ctypes.c_void_p), 
-                self.rcutte.ctypes.data_as(ctypes.c_void_p), 
-                self.mo_coeff.ctypes.data_as(ctypes.c_void_p), 
-                self.mo_occ.ctypes.data_as(ctypes.c_void_p), 
-                ctypes.c_int(self.natm),  
-                self.coords.ctypes.data_as(ctypes.c_void_p), 
-                ctypes.c_int(self.npang),  
-                ctypes.c_int((self.inuc)),  
-                self.xyzrho.ctypes.data_as(ctypes.c_void_p), 
-                ct_.ctypes.data_as(ctypes.c_void_p),
-                st_.ctypes.data_as(ctypes.c_void_p),
-                cp_.ctypes.data_as(ctypes.c_void_p),
-                sp_.ctypes.data_as(ctypes.c_void_p),
-                ctypes.c_int(backend),
-                ctypes.c_int(self.ntrial), 
-                ctypes.c_double(self.epsiscp), 
-                ctypes.c_double(self.epsroot), 
-                ctypes.c_double(self.rmaxsurf), 
-                ctypes.c_double(self.epsilon), 
-                self.rpru.ctypes.data_as(ctypes.c_void_p),
-                ctypes.c_double(self.step), 
-                ctypes.c_int(self.mstep),
-                self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
-                self.rsurf.ctypes.data_as(ctypes.c_void_p))
-        else:
-            feval = 'surf_driver'
-            drv = getattr(libfapi, feval)
-            drv(ctypes.c_int(self.nmo), 
-                ctypes.c_int(self.nprims),  
-                self.icen.ctypes.data_as(ctypes.c_void_p), 
-                self.ityp.ctypes.data_as(ctypes.c_void_p), 
-                self.oexp.ctypes.data_as(ctypes.c_void_p), 
-                self.ngroup.ctypes.data_as(ctypes.c_void_p), 
-                self.nzexp.ctypes.data_as(ctypes.c_void_p), 
-                self.nuexp.ctypes.data_as(ctypes.c_void_p), 
-                self.rcutte.ctypes.data_as(ctypes.c_void_p), 
-                self.mo_coeff.ctypes.data_as(ctypes.c_void_p), 
-                self.mo_occ.ctypes.data_as(ctypes.c_void_p), 
-                ctypes.c_int(self.natm),  
-                self.coords.ctypes.data_as(ctypes.c_void_p), 
-                ctypes.c_int(self.npang),  
-                ctypes.c_int((self.inuc+1)),  
-                self.xyzrho.ctypes.data_as(ctypes.c_void_p), 
-                ctypes.c_char_p(self.chkfile),
-                ct_.ctypes.data_as(ctypes.c_void_p),
-                st_.ctypes.data_as(ctypes.c_void_p),
-                cp_.ctypes.data_as(ctypes.c_void_p),
-                sp_.ctypes.data_as(ctypes.c_void_p),
-                angw_.ctypes.data_as(ctypes.c_void_p),
-                ctypes.c_int(backend),
-                ctypes.c_int(self.ntrial), 
-                ctypes.c_double(self.epsiscp), 
-                ctypes.c_double(self.epsroot), 
-                ctypes.c_double(self.rmaxsurf), 
-                ctypes.c_double(self.epsilon), 
-                ctypes.c_double(self.rprimer), 
-                ctypes.c_double(self.step), 
-                ctypes.c_int(self.mstep),
-                self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
-                self.rsurf.ctypes.data_as(ctypes.c_void_p))
+        feval = 'gsurf_driver'
+        drv = getattr(libgsurf, feval)
+        drv(ctypes.c_int(self.nmo),  
+            ctypes.c_int(self.nprims),  
+            self.ityp.ctypes.data_as(ctypes.c_void_p), 
+            self.oexp.ctypes.data_as(ctypes.c_void_p), 
+            self.ngroup.ctypes.data_as(ctypes.c_void_p), 
+            self.nzexp.ctypes.data_as(ctypes.c_void_p), 
+            self.nuexp.ctypes.data_as(ctypes.c_void_p), 
+            self.rcutte.ctypes.data_as(ctypes.c_void_p), 
+            self.mo_coeff.ctypes.data_as(ctypes.c_void_p), 
+            self.mo_occ.ctypes.data_as(ctypes.c_void_p), 
+            ctypes.c_int(self.natm),  
+            self.coords.ctypes.data_as(ctypes.c_void_p), 
+            ctypes.c_int(self.npang),  
+            ctypes.c_int((self.inuc)),  
+            self.xyzrho.ctypes.data_as(ctypes.c_void_p), 
+            ct_.ctypes.data_as(ctypes.c_void_p),
+            st_.ctypes.data_as(ctypes.c_void_p),
+            cp_.ctypes.data_as(ctypes.c_void_p),
+            sp_.ctypes.data_as(ctypes.c_void_p),
+            ctypes.c_int(backend),
+            ctypes.c_int(self.ntrial), 
+            ctypes.c_double(self.epsiscp), 
+            ctypes.c_double(self.epsroot), 
+            ctypes.c_double(self.rmaxsurf), 
+            ctypes.c_double(self.epsilon), 
+            self.rpru.ctypes.data_as(ctypes.c_void_p),
+            ctypes.c_double(self.step), 
+            ctypes.c_int(self.mstep),
+            self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
+            self.rsurf.ctypes.data_as(ctypes.c_void_p))
         logger.info(self,'Time finding surface %.3f (sec)' % (time.time()-t))
 
         self.rmin = 1000.0
@@ -421,13 +382,12 @@ if __name__ == '__main__':
     surf.verbose = 4
     surf.epsiscp = 0.220
     surf.mstep = 140
-    surf.csurf = True
     surf.npang = 5810
     surf.inuc = 0
     surf.kernel()
 
-    surf.inuc = 1
-    surf.kernel()
-
-    surf.inuc = 2
-    surf.kernel()
+    #surf.inuc = 1
+    #surf.kernel()
+    #
+    #surf.inuc = 2
+    #surf.kernel()

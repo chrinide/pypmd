@@ -19,7 +19,7 @@ void cerror(const char *text, const char *file, const int line);
 extern "C" void gpu_info(void);
 void init_nlm(void);
 
-__device__ __forceinline__ void rho_grad(const int *ityp,        
+__device__ __forceinline__ void eval_rho_grad(const int *ityp,        
                                          const double *oexp,     
                                          const int *ngroup,      
                                          const int *nzexp,       
