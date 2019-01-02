@@ -13,7 +13,7 @@ O      0.000000      0.000000      0.118351
 H      0.000000      0.761187     -0.469725
 H      0.000000     -0.761187     -0.469725
 '''
-mol.basis = 'sto-6g'
+mol.basis = 'def2-svp'
 mol.verbose = 4
 mol.spin = 0
 mol.symmetry = 1
@@ -123,7 +123,7 @@ System: ('Linux', 'cromo', '4.9.0-0.bpo.3-amd64', '#1 SMP Debian 4.9.30-2+deb9u5
 Python 2.7.14 (default, Apr 10 2018, 19:21:27) 
 [GCC 7.3.0]
 numpy 1.15.4  scipy 1.2.0
-Date: Mon Dec 31 19:25:49 2018
+Date: Wed Jan  2 01:48:50 2019
 PySCF version 1.6b
 PySCF path  /home/jluis/src/pyscf/dev/pyscf
 GIT ORIG_HEAD 26de5e7c8230210833f9d25fbbcde03cf2076fdc
@@ -146,15 +146,16 @@ GIT dev branch  21b86f213f74edcb007f36d31e83475226de7b3a
 
 nuclear repulsion = 9.14985900416406
 point group symmetry = C2v
-num. orbitals of irrep A1 = 4
-num. orbitals of irrep B1 = 2
-num. orbitals of irrep B2 = 1
-number of shells = 5
-number of NR pGTOs = 42
-number of NR cGTOs = 7
-basis = sto-6g
+num. orbitals of irrep A1 = 11
+num. orbitals of irrep A2 = 2
+num. orbitals of irrep B1 = 7
+num. orbitals of irrep B2 = 4
+number of shells = 12
+number of NR pGTOs = 38
+number of NR cGTOs = 24
+basis = def2-svp
 ecp = {}
-CPU time:         0.32
+CPU time:         0.29
 
 
 ******** <class 'pyscf.dft.rks_symm.SymAdaptedRKS'> ********
@@ -171,51 +172,53 @@ max. SCF cycles = 150
 direct_scf = True
 direct_scf_tol = 1e-13
 chkfile to save SCF result = h2o.chk
-max_memory 32000 MB (current use 73 MB)
+max_memory 32000 MB (current use 74 MB)
 XC functionals = rpw86,pbe
 radial grids: 
     Treutler-Ahlrichs (JCP 102, 346 (M4)) radial grids
     
 becke partition: Becke, JCP, 88, 2547 (1988)
-pruning grids: <function nwchem_prune at 0x2adbf9ea41b8>
+pruning grids: <function nwchem_prune at 0x2b0e4b4561b8>
 grids dens level: 3
 symmetrized grids: 1
-atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x2adbf9ea40c8>
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x2b0e4b4560c8>
 Freeze 0 electrons in irreps []
-    10 free electrons in irreps A1 B1 B2
+    10 free electrons in irreps A1 A2 B1 B2
 Set gradient conv threshold to 3.16228e-05
 tot grids = 34310
-init E= -76.2290131755788
-HOMO (B2) = -0.328203417936797  LUMO (A1) = 0.213520849359459
-cycle= 1 E= -76.0828938445881  delta_E= 0.146  |g|= 0.485  |ddm|= 1.67
-HOMO (B2) = 0.0825786260108901  LUMO (A1) = 0.363167105206022
-cycle= 2 E= -76.0782791488399  delta_E= 0.00461  |g|= 0.506  |ddm|= 1.44
-HOMO (B2) = -0.0764749328064706  LUMO (A1) = 0.290375641520621
-cycle= 3 E= -76.1656375001627  delta_E= -0.0874  |g|= 0.00321  |ddm|= 0.767
-HOMO (B2) = -0.0794018820130967  LUMO (A1) = 0.286320527999361
-cycle= 4 E= -76.1656410318611  delta_E= -3.53e-06  |g|= 0.000674  |ddm|= 0.0065
-HOMO (B2) = -0.0795737406356606  LUMO (A1) = 0.286266413416427
-cycle= 5 E= -76.1656412003026  delta_E= -1.68e-07  |g|= 1.8e-05  |ddm|= 0.00118
-HOMO (B2) = -0.0795814098247483  LUMO (A1) = 0.286259708553989
-cycle= 6 E= -76.1656412004087  delta_E= -1.06e-10  |g|= 8.13e-07  |ddm|= 2.44e-05
-HOMO (B2) = -0.0795820294876544  LUMO (A1) = 0.286259447675357
-Extra cycle  E= -76.1656412004087  delta_E= 1.42e-14  |g|= 8.44e-07  |ddm|= 2.35e-06
-converged SCF energy = -76.1656412004087
-Rho = 9.999999873617
-VV10 = 0.044015828824
-Total time taken VV10: 61.010 seconds
+init E= -76.4498988740715
+HOMO (B2) = -0.409617760815337  LUMO (A1) = -0.0124805137800864
+cycle= 1 E= -76.3743388848993  delta_E= 0.0756  |g|= 0.805  |ddm|= 1.43
+HOMO (B2) = -0.0364769092979877  LUMO (A1) = 0.0751227664010002
+cycle= 2 E= -76.1126560751058  delta_E= 0.262  |g|=  1.4  |ddm|= 1.53
+HOMO (B2) = -0.239218861909143  LUMO (A1) = 0.0233143363037417
+cycle= 3 E= -76.4934204811739  delta_E= -0.381  |g|= 0.0235  |ddm|= 1.09
+HOMO (B2) = -0.232985329090737  LUMO (A1) = 0.0258506942383849
+cycle= 4 E= -76.4935383592181  delta_E= -0.000118  |g|= 0.00947  |ddm|= 0.0191
+HOMO (B2) = -0.231969471920672  LUMO (A1) = 0.0253716797049732
+cycle= 5 E= -76.4935547756795  delta_E= -1.64e-05  |g|= 0.00149  |ddm|= 0.00608
+HOMO (B2) = -0.231783683880346  LUMO (A1) = 0.025385154288503
+cycle= 6 E= -76.4935551627918  delta_E= -3.87e-07  |g|= 4.29e-05  |ddm|= 0.000956
+HOMO (B2) = -0.231791390138198  LUMO (A1) = 0.0253770798986889
+cycle= 7 E= -76.4935551632579  delta_E= -4.66e-10  |g|= 6.73e-06  |ddm|= 5.25e-05
+HOMO (B2) = -0.231788182409289  LUMO (A1) = 0.0253783592755699
+Extra cycle  E= -76.4935551632433  delta_E= 1.46e-11  |g|= 1.14e-05  |ddm|= 1.16e-05
+converged SCF energy = -76.4935551632433
+Rho = 10.000000278429
+VV10 = 0.043627426182
+Total time taken VV10: 60.661 seconds
 Population :    10.000000
-Kinetic energy :    75.943631
-Nuclear Atraction energy :  -199.074841
+Kinetic energy :    75.882037
+Nuclear Atraction energy :  -198.919154
 Nuclear Repulsion energy :     9.149859
 Coulomb Pairs :   100.000000
 XC Pairs :    10.000000
 Pairs :    90.000000
-J energy :    47.438678
-XC energy :    -9.135560
-EE energy :    38.303118
-HF Total energy :   -75.678233
-Ex :    -9.282046
-Ec :    -0.340922
-Exc :    -9.622968
-DFT Total energy :   -76.165641
+J energy :    46.886688
+XC energy :    -8.954750
+EE energy :    37.931937
+HF Total energy :   -75.955321
+Ex :    -9.162327
+Ec :    -0.330657
+Exc :    -9.492985
+DFT Total energy :   -76.493555

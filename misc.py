@@ -72,17 +72,17 @@ def num_threads(n=None):
     >>> print(lib.num_threads())
     4
     '''
-    from pyscf.lib.numpy_helper import _np_helper
+    libcapi = load_library('libcapi')
     if n is not None:
-        _np_helper.set_omp_threads.restype = ctypes.c_int
-        threads = _np_helper.set_omp_threads(ctypes.c_int(int(n)))
+        libcapi.set_omp_threads.restype = ctypes.c_int
+        threads = libcapi.set_omp_threads(ctypes.c_int(int(n)))
         if threads == 0:
             warnings.warn('OpenMP is not available. '
                           'Setting omp_threads to %s has no effects.' % n)
         return threads
     else:
-        _np_helper.get_omp_threads.restype = ctypes.c_int
-        return _np_helper.get_omp_threads()
+        libcapi.get_omp_threads.restype = ctypes.c_int
+        return libcapi.get_omp_threads()
 
 class with_omp_threads(object):
     '''Using this macro to create a temporary context in which the number of

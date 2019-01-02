@@ -1,15 +1,15 @@
 #!/usr/bin/env make
 
-NC = nvcc
+NC = /home/jluis/pkgs/cuda/10.0/bin/nvcc
 CC = gcc
 FC = gfortran
 LD = gcc
-NFLAGS = -O3 -Xcompiler "-O3 -fPIC -mtune=native"
+NFLAGS = -g -Xcompiler "-fPIC"
 FDEBUG = -Wpedantic -g -pg -Wunused -fbacktrace -fcheck=bounds,mem,pointer,do,array-temps -Wall
 CDEBUG = -Wpedantic -g -pg -Wunused -Wall
 LFLAGS = -shared
-FFLAGS = -fpic -O3 -mtune=native -fopenmp $(FDEBUG) 
-CFLAGS = -fpic -O3 -mtune=native -fopenmp $(CDEBUG) 
+FFLAGS = -fpic -O3 -mtune=native -fopenmp #$(FDEBUG) 
+CFLAGS = -fpic -O3 -mtune=native -fopenmp #$(CDEBUG) 
 
 all: libfapi.so libcapi.so libgapi.so 
  
@@ -17,7 +17,7 @@ FOBJECTS = mod_prec.o mod_io.o mod_memory.o mod_param.o mod_futils.o \
 mod_math.o mod_mole.o mod_basis.o mod_gto.o mod_fields.o mod_surface.o \
 mod_atomic.o numint.o surface.o fields.o lebgrid.o atomic.o gto.o vv10.o
 
-COBJECTS = csurf.o cleb.o capi.o
+COBJECTS = csurf.o cleb.o capi.o misc.o
 
 NOBJECTS = gapi.o
 

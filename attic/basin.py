@@ -24,9 +24,6 @@ libfapi = misc.load_library('libfapi')
 if sys.version_info >= (3,):
     unicode = str
 
-NPROPS = 3
-PROPS = ['density', 'kinetic', 'laplacian']
-OCCDROP = 1e-12
 EPS = 1e-7
 
 def inbasin(self,r,j):
@@ -59,7 +56,7 @@ def out_beta(self):
     t0 = time.clock()
     rmesh, rwei, dvol, dvoln = grids.rquad(nrad,r0,rfar,rad,iqudr,mapr)
     coordsang = self.agrids
-    rprops = numpy.zeros(NPROPS)
+    rprops = 0.0
     for n in range(nrad):
         r = rmesh[n]
         coords = []
@@ -79,11 +76,10 @@ def out_beta(self):
                 weigths.append(coordsang[j,4])
         coords = numpy.array(coords)
         weigths = numpy.array(weigths)
-        val = numint.eval_basin(self,coords)
-        props = numpy.einsum('ip,i->p', val, weigths)
+        val = numint.eval_rho(self,coords)
+        props = numpy.einsum('i,i->', val, weigths)
         rprops += props*dvol[n]*rwei[n]
-    for i in range(NPROPS):
-        logger.info(self,'*--> %s density outside bsphere %8.5f ', PROPS[i], rprops[i])    
+    logger.info(self,'*--> Electron density outside bsphere %8.5f ', rprops)    
     logger.timer(self,'Out Bsphere build', t0)
     return rprops
     
@@ -101,7 +97,7 @@ def int_beta(self):
     t0 = time.clock()
     rmesh, rwei, dvol, dvoln = grids.rquad(nrad,r0,rfar,rad,iqudr,mapr)
     coordsang = grids.lebgrid(self.bnpang)
-    rprops = numpy.zeros(NPROPS)
+    rprops = 0.0
     for n in range(nrad):
         r = rmesh[n]
         for j in range(self.bnpang): # j-loop can be changed to map
@@ -113,11 +109,10 @@ def int_beta(self):
             xcoor[2] = r*cost    
             p = self.xnuc + xcoor
             coords[j] = p
-        val = numint.eval_basin(self,coords)
-        props = numpy.einsum('ip,i->p', val, coordsang[:,4])
+        val = numint.eval_rho(self,coords)
+        props = numpy.einsum('i,i->', val, coordsang[:,4])
         rprops += props*dvol[n]*rwei[n]
-    for i in range(NPROPS):
-        logger.info(self,'*--> %s density inside bsphere %8.5f ', PROPS[i], rprops[i])    
+    logger.info(self,'*--> Electron density inside bsphere %8.5f ', rprops)    
     logger.timer(self,'Bsphere build', t0)
     return rprops
 
@@ -311,8 +306,7 @@ class Basin(object):
         #            'outprops':rprops,
         #            'totprops':(brprops+rprops)}
         #chkfile.save(self.surfile, 'atom_props'+str(self.inuc), atom_dic)
-        for i in range(NPROPS):
-            logger.info(self,'*-> Total %s density %8.5f ', PROPS[i], (rprops[i]+brprops[i]))    
+        logger.info(self,'*-> Total density density %8.5f ', (rprops+brprops))    
         logger.info(self,'')
         logger.info(self,'Basim properties of atom %d done',self.inuc)
         logger.timer(self,'Basin build', t0)
@@ -337,8 +331,8 @@ if __name__ == '__main__':
     bas.inuc = 0
     bas.kernel()
 
-    #bas.inuc = 1
-    #bas.kernel()
+    bas.inuc = 1
+    bas.kernel()
  
     #bas.inuc = 2
     #bas.kernel()

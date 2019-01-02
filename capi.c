@@ -21,6 +21,7 @@ double vv10(const int n, const double coef_C,
   double kappa_pref;
   kappa_pref = coef_B*(1.5*pi)/pow(9.0*pi,1.0/6.0);
 
+  // Change parallel to here as in fortran
   for (idx=0; idx<n; idx++){
     double point1x = coords[idx*3+0];
     double point1y = coords[idx*3+1];

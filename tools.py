@@ -150,6 +150,6 @@ if __name__ == '__main__':
     print_txt(name,inuc)
     inuc = 1
     print_txt(name,inuc)
-    #inuc = 2
-    #print_txt(name,inuc)
+    inuc = 2
+    print_txt(name,inuc)
 

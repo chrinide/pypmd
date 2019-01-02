@@ -12,7 +12,7 @@ O      0.000000      0.000000      0.118351
 H      0.000000      0.761187     -0.469725
 H      0.000000     -0.761187     -0.469725
 '''
-mol.basis = 'sto-6g'
+mol.basis = 'def2-svp'
 mol.verbose = 4
 mol.spin = 0
 mol.symmetry = 1

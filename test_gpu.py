@@ -139,44 +139,11 @@ class Becke(object):
         if self.verbose > logger.NOTE:
             self.dump_input()
 
-        # 3) Qualitie of grid
-        rho = numint.eval_rho(self,self.grids.coords)
+        rho = numint.eval_gpu(self,self.grids.coords)
         rhoval = numpy.einsum('i,i->',rho,self.grids.weights)
         logger.info(self,'Integral of rho %.6f' % rhoval)
 
-        # 4) Promolecular density and weights
-        logger.info(self,'Getting atomic data from tabulated densities')
-        npoints = len(self.grids.weights)
-        output = numpy.zeros(npoints)
-        promol = numpy.zeros(npoints)
-        ftmp = misc.H5TmpFile()
-        rhoat = 0.0
-        for i in range(self.natm):
-            libfapi.atomic(ctypes.c_int(npoints),  
-                           ctypes.c_int(self.charges[i]),  
-                           self.coords[i].ctypes.data_as(ctypes.c_void_p), 
-                           self.grids.coords.ctypes.data_as(ctypes.c_void_p), 
-                           output.ctypes.data_as(ctypes.c_void_p))
-            h5dat = ftmp.create_dataset('atom'+str(i), (npoints,), 'f8')
-            h5dat[:] = output[:]
-            rhoa = numpy.einsum('i,i->',output,self.grids.weights)
-            rhoat += rhoa
-            promol += output
-            logger.info(self,'Integral of rho for atom %d %.6f' % (i, rhoa))
-        logger.info(self,'Integral of rho promolecular %.6f' % rhoat)
-        for i in range(self.natm):
-            h5dat = ftmp.create_dataset('weight'+str(i), (npoints,), 'f8')
-            h5dat[:] = ftmp['atom'+str(i)][:]/(promol+param.HMINIMAL)
-
-        # 5) Atomic partition
-        atomq = numpy.zeros(self.natm)
-        hirshfeld = numpy.zeros(npoints)
-        for i in range(self.natm):
-            hirshfeld[:] = ftmp['weight'+str(i)]
-            atomq[i] = numpy.einsum('i,i->',rho,self.grids.weights*hirshfeld)
-            logger.info(self,'Charge of atom %d %.6f' % (i,atomq[i]))
-
-        logger.timer(self,'Becke integration done', t0)
+        logger.timer(self,'GPU integration done', t0)
         logger.info(self,'')
 
         return self
@@ -187,20 +154,23 @@ if __name__ == '__main__':
     name = 'h2o.wfn.h5'
     becke = Becke(name)
     becke.verbose = 4
-    becke.grids.level = 4
-    becke.grids.prune = 0
+    becke.grids.atom_grid = {'H':(510,5810), 'O':(510,5810)}
+    becke.grids.prune = None
     becke.kernel()
 
     from pyscf import lib, dft
     from pyscf.dft import numint
 
+    t0 = time.clock()
+    logger.TIMER_LEVEL = 3
     chkname = 'h2o.chk'
     mol = lib.chkfile.load_mol(chkname)
     mf_mo_coeff = lib.chkfile.load(chkname, 'scf/mo_coeff')
     mf_mo_occ = lib.chkfile.load(chkname, 'scf/mo_occ')
     coords = numpy.reshape(becke.grids.coords, (-1,3))
-    ao = dft.numint.eval_ao(mol, coords, deriv=0)
-    rho = dft.numint.eval_rho2(mol, ao, mf_mo_coeff, mf_mo_occ, xctype='LDA')
-    rho = numpy.einsum('i,i->',rho,becke.grids.weights)
-    print rho
+    ao = dft.numint.eval_ao(mol, coords, deriv=1)
+    rho = dft.numint.eval_rho2(mol, ao, mf_mo_coeff, mf_mo_occ, xctype='GGA')
+    rho = numpy.einsum('i,i->',rho[0],becke.grids.weights)
+    logger.info(mol,'Integral of rho %.6f' % rho)
+    logger.timer(mol,'GPU integration done', t0)
 

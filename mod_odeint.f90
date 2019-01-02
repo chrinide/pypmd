@@ -198,7 +198,7 @@ contains
     real(kind=rp) :: ak1(3), ak2(3), ak3(3), ak4(3), ak5(3), ak6(3), ak7(3)
     real(kind=rp) :: y4(3), y5(3)
 
-    call pointr1 (y,rho,grad,gradmod)
+    !call pointr1 (y,rho,grad,gradmod)
     ak1(:) = dydx(:)
     yout = y + h*b21*ak1
 
