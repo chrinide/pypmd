@@ -187,7 +187,8 @@ if __name__ == '__main__':
     name = 'h2o.wfn.h5'
     becke = Becke(name)
     becke.verbose = 4
-    becke.grids.level = 4
+    becke.grids.level = 3
+    becke.grids.atom_grid = {'H': (521,5810), 'O': (521,5810)}
     becke.grids.prune = 0
     becke.kernel()
 
