@@ -4,12 +4,12 @@ NC = nvcc
 CC = gcc
 FC = gfortran
 LD = gcc
-NFLAGS = -g -Xcompiler "-mtune=native -fPIC" -rdc=true
+NFLAGS = -O3 -Xcompiler "-O3 -mtune=native -fPIC" #-rdc=true
 FDEBUG = -Wpedantic -g -pg -Wunused -fbacktrace -fcheck=bounds,mem,pointer,do,array-temps -Wall
 CDEBUG = -Wpedantic -g -pg -Wunused -Wall
 LFLAGS = -shared
-FFLAGS = -fpic -mtune=native -fopenmp $(FDEBUG) 
-CFLAGS = -fpic -mtune=native -fopenmp $(CDEBUG) 
+FFLAGS = -O3 -fpic -mtune=native -fopenmp $(FDEBUG) 
+CFLAGS = -O3 -fpic -mtune=native -fopenmp $(CDEBUG) 
 
 all: libfapi.so libcapi.so libgapi.so libgsurf.so
  

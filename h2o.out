@@ -1,7 +1,7 @@
 #INFO: **** input file is /home/jluis/tmp/pypmd/h2o.py ****
 #!/usr/bin/env python
 
-import numpy, time
+import numpy, time, os, sys
 from pyscf import gto, scf, lib, dft, ao2mo
 from pyscf.tools import wfn_format
 
@@ -13,7 +13,9 @@ O      0.000000      0.000000      0.118351
 H      0.000000      0.761187     -0.469725
 H      0.000000     -0.761187     -0.469725
 '''
-mol.basis = 'def2-svp'
+dirnow = os.path.realpath(os.path.join(__file__, '..'))
+basfile = os.path.join(dirnow, 'sqzp.dat')
+mol.basis = basfile
 mol.verbose = 4
 mol.spin = 0
 mol.symmetry = 1
@@ -123,12 +125,12 @@ System: ('Linux', 'cromo', '4.9.0-0.bpo.3-amd64', '#1 SMP Debian 4.9.30-2+deb9u5
 Python 2.7.14 (default, Apr 10 2018, 19:21:27) 
 [GCC 7.3.0]
 numpy 1.15.4  scipy 1.2.0
-Date: Wed Jan  2 01:48:50 2019
-PySCF version 1.6b
+Date: Thu Jan  3 00:33:43 2019
+PySCF version 1.6
 PySCF path  /home/jluis/src/pyscf/dev/pyscf
-GIT ORIG_HEAD 26de5e7c8230210833f9d25fbbcde03cf2076fdc
+GIT ORIG_HEAD 21b86f213f74edcb007f36d31e83475226de7b3a
 GIT HEAD      ref: refs/heads/dev
-GIT dev branch  21b86f213f74edcb007f36d31e83475226de7b3a
+GIT dev branch  b2420273effddedd05459f6520b493977f9258d7
 
 [ENV] PYSCF_MAX_MEMORY 32000
 [ENV] PYSCF_TMPDIR /scratch-ssd/jluis
@@ -146,16 +148,16 @@ GIT dev branch  21b86f213f74edcb007f36d31e83475226de7b3a
 
 nuclear repulsion = 9.14985900416406
 point group symmetry = C2v
-num. orbitals of irrep A1 = 11
-num. orbitals of irrep A2 = 2
-num. orbitals of irrep B1 = 7
-num. orbitals of irrep B2 = 4
-number of shells = 12
-number of NR pGTOs = 38
-number of NR cGTOs = 24
-basis = def2-svp
+num. orbitals of irrep A1 = 64
+num. orbitals of irrep A2 = 27
+num. orbitals of irrep B1 = 50
+num. orbitals of irrep B2 = 36
+number of shells = 51
+number of NR pGTOs = 220
+number of NR cGTOs = 177
+basis = /home/jluis/tmp/pypmd/sqzp.dat
 ecp = {}
-CPU time:         0.29
+CPU time:         0.28
 
 
 ******** <class 'pyscf.dft.rks_symm.SymAdaptedRKS'> ********
@@ -178,47 +180,49 @@ radial grids:
     Treutler-Ahlrichs (JCP 102, 346 (M4)) radial grids
     
 becke partition: Becke, JCP, 88, 2547 (1988)
-pruning grids: <function nwchem_prune at 0x2b0e4b4561b8>
+pruning grids: <function nwchem_prune at 0x2b6db14c0230>
 grids dens level: 3
 symmetrized grids: 1
-atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x2b0e4b4560c8>
+atomic radii adjust function: <function treutler_atomic_radii_adjust at 0x2b6db14c0140>
 Freeze 0 electrons in irreps []
     10 free electrons in irreps A1 A2 B1 B2
 Set gradient conv threshold to 3.16228e-05
 tot grids = 34310
-init E= -76.4498988740715
-HOMO (B2) = -0.409617760815337  LUMO (A1) = -0.0124805137800864
-cycle= 1 E= -76.3743388848993  delta_E= 0.0756  |g|= 0.805  |ddm|= 1.43
-HOMO (B2) = -0.0364769092979877  LUMO (A1) = 0.0751227664010002
-cycle= 2 E= -76.1126560751058  delta_E= 0.262  |g|=  1.4  |ddm|= 1.53
-HOMO (B2) = -0.239218861909143  LUMO (A1) = 0.0233143363037417
-cycle= 3 E= -76.4934204811739  delta_E= -0.381  |g|= 0.0235  |ddm|= 1.09
-HOMO (B2) = -0.232985329090737  LUMO (A1) = 0.0258506942383849
-cycle= 4 E= -76.4935383592181  delta_E= -0.000118  |g|= 0.00947  |ddm|= 0.0191
-HOMO (B2) = -0.231969471920672  LUMO (A1) = 0.0253716797049732
-cycle= 5 E= -76.4935547756795  delta_E= -1.64e-05  |g|= 0.00149  |ddm|= 0.00608
-HOMO (B2) = -0.231783683880346  LUMO (A1) = 0.025385154288503
-cycle= 6 E= -76.4935551627918  delta_E= -3.87e-07  |g|= 4.29e-05  |ddm|= 0.000956
-HOMO (B2) = -0.231791390138198  LUMO (A1) = 0.0253770798986889
-cycle= 7 E= -76.4935551632579  delta_E= -4.66e-10  |g|= 6.73e-06  |ddm|= 5.25e-05
-HOMO (B2) = -0.231788182409289  LUMO (A1) = 0.0253783592755699
-Extra cycle  E= -76.4935551632433  delta_E= 1.46e-11  |g|= 1.14e-05  |ddm|= 1.16e-05
-converged SCF energy = -76.4935551632433
-Rho = 10.000000278429
-VV10 = 0.043627426182
-Total time taken VV10: 60.661 seconds
+init E= -76.5535812573087
+HOMO (B2) = -0.409995353594426  LUMO (A1) = -0.0492447712089602
+cycle= 1 E= -76.4871323052336  delta_E= 0.0664  |g|= 0.839  |ddm|= 0.869
+HOMO (B2) = -0.0821786881313417  LUMO (A1) = -0.0114608030863827
+cycle= 2 E= -75.9054675992169  delta_E= 0.582  |g|= 1.89  |ddm|= 0.895
+HOMO (B2) = -0.285001010842381  LUMO (A1) = -0.039954884709874
+cycle= 3 E= -76.6084677162542  delta_E= -0.703  |g|= 0.0337  |ddm|= 0.637
+HOMO (B2) = -0.26918547682063  LUMO (A1) = -0.0351184771666322
+cycle= 4 E= -76.6087005003029  delta_E= -0.000233  |g|= 0.00907  |ddm|= 0.0256
+HOMO (B2) = -0.270405777144563  LUMO (A1) = -0.0360459371706312
+cycle= 5 E= -76.6087119791814  delta_E= -1.15e-05  |g|= 0.00201  |ddm|= 0.00373
+HOMO (B2) = -0.270751773842795  LUMO (A1) = -0.0361833637743552
+cycle= 6 E= -76.6087127262899  delta_E= -7.47e-07  |g|= 0.000231  |ddm|= 0.000899
+HOMO (B2) = -0.270800359943261  LUMO (A1) = -0.0362008414862979
+cycle= 7 E= -76.6087127342957  delta_E= -8.01e-09  |g|= 1.46e-05  |ddm|= 6.61e-05
+HOMO (B2) = -0.270801708887  LUMO (A1) = -0.0362006212727461
+cycle= 8 E= -76.6087127343356  delta_E= -3.99e-11  |g|= 2.11e-06  |ddm|= 6.95e-06
+HOMO (B2) = -0.270802587436498  LUMO (A1) = -0.0362007826440798
+Extra cycle  E= -76.6087127343332  delta_E= 2.39e-12  |g|= 4.18e-06  |ddm|= 1.89e-06
+converged SCF energy = -76.6087127343332
+Rho = 10.000000184125
+VV10 = 0.043496100914
+Total time taken VV10: 71.013 seconds
 Population :    10.000000
-Kinetic energy :    75.882037
-Nuclear Atraction energy :  -198.919154
+Kinetic energy :    76.320670
+Nuclear Atraction energy :  -199.278254
 Nuclear Repulsion energy :     9.149859
 Coulomb Pairs :   100.000000
 XC Pairs :    10.000000
 Pairs :    90.000000
-J energy :    46.886688
-XC energy :    -8.954750
-EE energy :    37.931937
-HF Total energy :   -75.955321
-Ex :    -9.162327
-Ec :    -0.330657
-Exc :    -9.492985
-DFT Total energy :   -76.493555
+J energy :    46.670496
+XC energy :    -8.913047
+EE energy :    37.757449
+HF Total energy :   -76.050277
+Ex :    -9.147705
+Ec :    -0.323779
+Exc :    -9.471484
+DFT Total energy :   -76.608713

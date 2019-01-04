@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import numpy, time
+import numpy, time, os, sys
 from pyscf import gto, scf, lib, dft, ao2mo
 from pyscf.tools import wfn_format
 
@@ -12,7 +12,9 @@ O      0.000000      0.000000      0.118351
 H      0.000000      0.761187     -0.469725
 H      0.000000     -0.761187     -0.469725
 '''
-mol.basis = 'def2-svp'
+dirnow = os.path.realpath(os.path.join(__file__, '..'))
+basfile = os.path.join(dirnow, 'sqzp.dat')
+mol.basis = basfile
 mol.verbose = 4
 mol.spin = 0
 mol.symmetry = 1

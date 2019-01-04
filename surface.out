@@ -13,7 +13,7 @@ Nuclei 1 with charge 1 position : 1.438435  0.000000  -0.889042
 Nuclei 2 with charge 1 position : -1.438435  0.000000  -0.889042
 * Basis Info
 Number of Orbitals 5
-Number of primitives 39
+Number of primitives 273
 * Surface Info
 Surface for nuc 1
 Rmaxsurface 10.000000
@@ -26,101 +26,17 @@ ODE solver rkck
 ODE tool 0.000010
 Max steps in ODE solver 140
 
-Good rho position 0.000000 0.000000 0.222239
-Check rho position 1.358950 0.000000 -0.832996
+Good rho position -0.000000 0.000000 0.222249
+Check rho position 1.428583 0.000000 -0.881976
 Setting xyrho for atom to imput coords
-Check rho position -1.358950 0.000000 -0.832996
+Check rho position -1.428583 0.000000 -0.881976
 Setting xyrho for atom to imput coords
-Time finding nucleus 0.498 (sec)
-Time finding surface 8.183 (sec)
-Rmin for surface 1.466935
+Time finding nucleus 3.446 (sec)
+Time finding surface 47.164 (sec)
+Rmin for surface 1.433001
 Rmax for surface 10.000000
 Finish with surface
 Write HDF5 surface file
 Surface of atom 0 saved
-    CPU time for BaderSurf build     33.32 sec
-
-
-******** <class '__main__.BaderSurf'> flags ********
-* General Info
-Verbose level 4
-Scratch dir .
-Input chkfile data file h2o.wfn.h5
-Max_memory 4000 MB
-* Molecular Info
-Num atoms 3
-Atom Coordinates (Bohr)
-Nuclei 0 with charge 8 position : 0.000000  0.000000  0.222261
-Nuclei 1 with charge 1 position : 1.438435  0.000000  -0.889042
-Nuclei 2 with charge 1 position : -1.438435  0.000000  -0.889042
-* Basis Info
-Number of Orbitals 5
-Number of primitives 39
-* Surface Info
-Surface for nuc 2
-Rmaxsurface 10.000000
-Npang points 5810
-Ntrial 11
-Rprimer 0.400000
-Epsiscp 0.220000
-Epsroot 0.000010
-ODE solver rkck
-ODE tool 0.000010
-Max steps in ODE solver 140
-
-Good rho position 0.000000 0.000000 0.222239
-Check rho position 1.358950 0.000000 -0.832996
-Setting xyrho for atom to imput coords
-Check rho position -1.358950 0.000000 -0.832996
-Setting xyrho for atom to imput coords
-Time finding nucleus 0.500 (sec)
-Time finding surface 8.245 (sec)
-Rmin for surface 0.352640
-Rmax for surface 10.000000
-Finish with surface
-Write HDF5 surface file
-Surface of atom 1 saved
-    CPU time for BaderSurf build     34.11 sec
-
-
-******** <class '__main__.BaderSurf'> flags ********
-* General Info
-Verbose level 4
-Scratch dir .
-Input chkfile data file h2o.wfn.h5
-Max_memory 4000 MB
-* Molecular Info
-Num atoms 3
-Atom Coordinates (Bohr)
-Nuclei 0 with charge 8 position : 0.000000  0.000000  0.222261
-Nuclei 1 with charge 1 position : 1.438435  0.000000  -0.889042
-Nuclei 2 with charge 1 position : -1.438435  0.000000  -0.889042
-* Basis Info
-Number of Orbitals 5
-Number of primitives 39
-* Surface Info
-Surface for nuc 3
-Rmaxsurface 10.000000
-Npang points 5810
-Ntrial 11
-Rprimer 0.400000
-Epsiscp 0.220000
-Epsroot 0.000010
-ODE solver rkck
-ODE tool 0.000010
-Max steps in ODE solver 140
-
-Good rho position 0.000000 0.000000 0.222239
-Check rho position 1.358950 0.000000 -0.832996
-Setting xyrho for atom to imput coords
-Check rho position -1.358950 0.000000 -0.832996
-Setting xyrho for atom to imput coords
-Time finding nucleus 0.501 (sec)
-Time finding surface 8.238 (sec)
-Rmin for surface 0.352640
-Rmax for surface 10.000000
-Finish with surface
-Write HDF5 surface file
-Surface of atom 2 saved
-    CPU time for BaderSurf build     34.07 sec
+    CPU time for BaderSurf build    192.22 sec
 

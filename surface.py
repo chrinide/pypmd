@@ -421,13 +421,13 @@ if __name__ == '__main__':
     surf.verbose = 4
     surf.epsiscp = 0.220
     surf.mstep = 140
-    surf.csurf = True
+    #surf.csurf = True
     surf.npang = 5810
     surf.inuc = 0
     surf.kernel()
 
-    surf.inuc = 1
-    surf.kernel()
+    #surf.inuc = 1
+    #surf.kernel()
 
-    surf.inuc = 2
-    surf.kernel()
+    #surf.inuc = 2
+    #surf.kernel()

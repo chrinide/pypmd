@@ -37,7 +37,7 @@ void gsurf_driver(const int nmo,
                   const int mstep,
                   int *nlimsurf, double *rlimsurf){
 
-  const int blockSize = 128;
+  const int blockSize = 256;
   const int gridSize = (npang + blockSize - 1) / blockSize; 
 
   init_nlm();
@@ -113,15 +113,9 @@ void gsurf_driver(const int nmo,
   cudaEventRecord(stop, 0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&timer, start, stop);
+  printf("GPU elapsed time: %3.3f s\n", timer/1000);
   cudaMemcpy(nlimsurf, dnlimsurf_, npang*sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(rlimsurf, drsurf_, ntrial*npang*sizeof(double), cudaMemcpyDeviceToHost);
-	//for (i=0; i<npang_; i++){
-  //  nlimsurf[i] = nlimsurf_[i];
-	//  for (j=0; j<ntrial_; j++){
-  //    rlimsurf[i*ntrial_+j] = rsurf_[i*ntrial_+j];
-  //  }
-  //}
-  printf("GPU elapsed time: %3.3f s\n", timer/1000);
 
   cudaFree(dngroup_);
   cudaFree(dnuexp_);
@@ -143,7 +137,7 @@ void gsurf_driver(const int nmo,
 
 }}
 
-__device__ bool __forceinline__ checkcp(double *x, int *nuc,
+__device__ bool checkcp(double *x, int *nuc,
                         const int *ityp,            
                         const double *oexp,         
                         const int *ngroup,          
