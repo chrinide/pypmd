@@ -7,13 +7,10 @@
 !
 module mod_slm
 
-  use iso_c_binding, only: c_double, c_int
+  use mod_prec, only: rp, ip
   implicit none
   private
 
-  integer, parameter :: rp = c_double
-  integer, parameter :: ip = c_int
-  real(kind=rp), parameter :: pi = 3.14159265358979324
   integer(kind=ip), parameter :: mxfact = 100
   integer(kind=ip), parameter :: mcomb = 12
 
@@ -25,7 +22,7 @@ module mod_slm
   real(kind=rp) :: fact(0:mxfact)
   real(kind=rp) :: comb(0:mcomb,0:mcomb)
 
-  public :: init_slm, eval_rsh
+  public :: init_slm, eval_rsh, allocate_space_for_slm, deallocate_space_for_slm
 
 contains
 
@@ -134,14 +131,14 @@ contains
   ! the sqrt(4pi/(2l+1)) factor
   subroutine init_slm (lmaxi)
 
-    !use mod_param, only: pi
+    use mod_param, only: pi
     implicit none
     integer(kind=ip), intent(in) :: lmaxi
 
     real(kind=rp), parameter :: twopi = 2.0*pi
 
+    real(kind=rp) :: temp
     integer(kind=ip) :: l, m, i, il, l1, l12, l2, l22, lmax, ls, j, ij
-    real(kind=rp) :: temp, a1, a2, cc, facsqrt
 
     fact(0) = 1.0
     do i = 1,mxfact
