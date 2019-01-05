@@ -1,6 +1,0 @@
-verbose
-load h2o.wfn
-grid
-  lebedev 5810
-endgrid
-surface 1

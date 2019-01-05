@@ -1,37 +1,71 @@
-#! /usr/bin/make
+#!/usr/bin/env make
 
-include make.inc
+NC = nvcc
+CC = gcc
+FC = gfortran
+LD = gcc
+NFLAGS = -O3 -Xcompiler "-O3 -mtune=native -fPIC" #-rdc=true
+FDEBUG = -Wpedantic -g -pg -Wunused -fbacktrace -fcheck=bounds,mem,pointer,do,array-temps -Wall
+CDEBUG = -Wpedantic -g -pg -Wunused -Wall
+LFLAGS = -shared
+FFLAGS = -O3 -fpic -mtune=native -fopenmp $(FDEBUG) 
+CFLAGS = -O3 -fpic -mtune=native -fopenmp $(CDEBUG) 
 
-all: promolden
-exe = pmd
-obj = mod_prec.o mod_io.o mod_param.o mod_utils.o mod_linalg.o \
-			mod_memory.o mod_datatm.o mod_wfn.o mod_fields.o mod_odeint.o \
-			mod_surf.o lebgrid.o quadratures.o mod_quad.o promolden.o
+all: libfapi.so libcapi.so libgapi.so libgsurf.so
+ 
+FOBJECTS = mod_prec.o mod_io.o mod_memory.o mod_param.o mod_futils.o \
+mod_math.o mod_mole.o mod_basis.o mod_gto.o mod_fields.o mod_surface.o \
+mod_atomic.o mod_slm.o numint.o surface.o fields.o lebgrid.o atomic.o gto.o vv10.o
 
-.SUFFIXES: .o .f90 .f
+COBJECTS = csurf.o cleb.o capi.o misc.o
 
-%.o: %.F90
-	$(FC) -c $(FFLAGS) $(OPT) $(FDEBUG) -o $@ $<
+NOBJECTS = gapi.o
 
-%.o: %.f90
-	$(FC) -c $(FFLAGS) $(OPT) $(FDEBUG) -o $@ $<
+libfapi.so: $(FOBJECTS)
+	$(LD) $(LFLAGS) -o libfapi.so $(FOBJECTS) -lgfortran
 
-%.o: %.f
-	$(FC) -c $(FFLAGS) $(OPT) $(FDEBUG) -o $@ $<
+libgsurf.so: gsurf.o
+	$(NC) $(LFLAGS) -o libgsurf.so gsurf.o
 
-promolden: $(obj)
-	$(FC) $(LDFLAG) -o $(exe) $(obj) 
+libcapi.so: $(COBJECTS)
+	$(LD) $(LFLAGS) -o libcapi.so $(COBJECTS) -lm 
+
+libgapi.so: $(NOBJECTS)
+	$(NC) $(LFLAGS) -o libgapi.so $(NOBJECTS)
 
 clean:
-	@rm -f $(obj) *.mod $(exe)
+	/bin/rm -f *.so *.o *.mod *.pyc
 
-.PHONY: all promolden clean
+.SUFFIXES:
+.SUFFIXES: .o .f90 .F90 .f .F .c .cu
 
-mod_surf.o mod_surf.mod : mod_fields.mod
-mod_wfn.o mod_wfn.mod : mod_linalg.mod
-mod_wfn.o mod_wfn.mod mod_surf.o mod_surf.mod : mod_memory.mod
-promolden.o promolden.mod mod_wfn.o mod_wfn.mod mod_surf.o mod_surf.mod mod_datatm.o mod_datatm.mod : mod_param.mod
-promolden.o promolden.mod mod_wfn.o mod_wfn.mod mod_utils.o mod_utils.mod mod_surf.o mod_surf.mod mod_param.o mod_param.mod mod_odeint.o mod_odeint.mod mod_memory.o mod_memory.mod mod_linalg.o mod_linalg.mod mod_fields.o mod_fields.mod mod_datatm.o mod_datatm.mod : mod_prec.mod
-promolden.o promolden.mod : mod_surf.mod
-promolden.o promolden.mod mod_surf.o mod_surf.mod mod_fields.o mod_fields.mod : mod_wfn.mod
-promolden.o promolden.mod mod_wfn.o mod_wfn.mod mod_utils.o mod_utils.mod mod_surf.o mod_surf.mod mod_param.o mod_param.mod mod_memory.o mod_memory.mod mod_linalg.o mod_linalg.mod : mod_io.mod
+.f90.o:
+	$(FC) -c $(FFLAGS) -o $@ $<
+
+.f.o:
+	$(FC) -c $(FFLAGS) -o $@ $<
+
+.F.o:
+	$(FC) -c $(FFLAGS) -o $@ $<
+
+.F90.o:
+	$(FC) -c $(FFLAGS) -o $@ $<
+
+.c.o:
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+.cu.o:
+	$(NC) -c $(NFLAGS) -o $@ $<
+
+csurf.o: csurf.h
+gapi.o: gapi.h
+gsurf.o: gsurf.h
+
+surface.o surface.mod mod_fields.o mod_fields.mod fields.o fields.mod becke.o becke.mod : mod_basis.mod
+mod_surface.o mod_surface.mod mod_odeint.o mod_odeint.mod fields.o fields.mod : mod_fields.mod
+mod_surface.o mod_surface.mod mod_mole.o mod_mole.mod mod_basis.o mod_basis.mod : mod_memory.mod
+surface.o surface.mod mod_surface.o mod_surface.mod mod_fields.o mod_fields.mod mod_basis.o mod_basis.mod fields.o fields.mod becke.o becke.mod : mod_mole.mod
+surface.o surface.mod fields.o fields.mod becke.o becke.mod : mod_param.mod
+surface.o surface.mod mod_surface.o mod_surface.mod mod_param.o mod_param.mod mod_odeint.o mod_odeint.mod mod_mole.o mod_mole.mod mod_memory.o mod_memory.mod mod_gto.o mod_gto.mod mod_futils.o mod_futils.mod mod_fields.o mod_fields.mod mod_basis.o mod_basis.mod mod_atomic.o mod_atomic.mod fields.o fields.mod becke.o becke.mod : mod_prec.mod
+surface.o surface.mod : mod_surface.mod
+surface.o surface.mod mod_surface.o mod_surface.mod mod_param.o mod_param.mod mod_odeint.o mod_odeint.mod mod_memory.o mod_memory.mod mod_gto.o mod_gto.mod mod_futils.o mod_futils.mod fields.o fields.mod : mod_io.mod

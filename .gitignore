@@ -1,6 +1,9 @@
-*.o
-*.mod
-*.a
-*.so
+build/
+*.cube
+.cache/
+__pycache__/
 *.pyc
 tmp/
+*.o
+*.so
+*.mod
