@@ -21,7 +21,6 @@ if sys.version_info >= (3,):
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 libfapi = misc.load_library('libfapi')
-libcapi = misc.load_library('libcapi')
 
 
 def rho_grad(self,point):
@@ -147,6 +146,7 @@ class BaderSurf(object):
         self.max_memory = param.MAX_MEMORY
         self.chkfile = datafile
         self.scratch = param.TMPDIR 
+        self.nthreads = misc.num_threads()
         self.inuc = 0
         self.epsiscp = 0.180
         self.ntrial = 11
@@ -158,9 +158,12 @@ class BaderSurf(object):
         self.epsilon = 1e-4 
         self.step = 0.1
         self.mstep = 200
-        self.csurf = False
-        self.nthreads = misc.num_threads()
-        self.gpu = False
+        self.leb = True
+        self.nptheta = 90
+        self.npphi = 180
+        self.iqudt = 'legendre'
+        self.corr = False
+        self.occdrop = 1e-6
 ##################################################
 # don't modify the following attributes, they are not input options
         self.xnuc = None
@@ -175,6 +178,7 @@ class BaderSurf(object):
         self.natm = None
         self.coords = None
         self.nmo = None
+        self.nocc = None
         self.nprims = None
         self.icen = None
         self.ityp = None
@@ -195,10 +199,15 @@ class BaderSurf(object):
         logger.info(self,'')
         logger.info(self,'******** %s flags ********', self.__class__)
         logger.info(self,'* General Info')
+        logger.info(self,'Date %s' % time.ctime())
+        logger.info(self,'Python %s' % sys.version)
+        logger.info(self,'Numpy %s' % numpy.__version__)
+        logger.info(self,'Number of threads %d' % self.nthreads)
         logger.info(self,'Verbose level %d' % self.verbose)
         logger.info(self,'Scratch dir %s' % self.scratch)
         logger.info(self,'Input chkfile data file %s' % self.chkfile)
         logger.info(self,'Max_memory %d MB' % self.max_memory)
+        logger.info(self,'Correlated ? %s' % self.corr)
 
         logger.info(self,'* Molecular Info')
         logger.info(self,'Num atoms %d' % self.natm)
@@ -210,6 +219,8 @@ class BaderSurf(object):
         logger.info(self,'* Basis Info')
         logger.info(self,'Number of Orbitals %d' % self.nmo)
         logger.info(self,'Number of primitives %d' % self.nprims)
+        logger.info(self,'Orbital EPS occ criterion %e' % self.occdrop)
+        logger.info(self,'Number of occupied molecular orbitals %d' % self.nocc)
         logger.debug(self,'Number of shells per center %s' % self.ngroup)
         for ic in range(self.natm):
             logger.debug(self,'Basis for center %d' % ic)
@@ -231,9 +242,15 @@ class BaderSurf(object):
         logger.debug(self,'Ocupation of molecular orbitals %s' % self.mo_occ)
 
         logger.info(self,'* Surface Info')
+        if (self.leb):
+            logger.info(self,'Lebedev quadrature')
+        else:
+            logger.info(self,'Theta quadrature %s' % self.iqudt)
+            logger.info(self,'Phi is always trapezoidal')
+            logger.info(self,'N(theta,phi) points %d %d' % (self.nptheta,self.npphi))
+        logger.info(self,'Npang points %d' % self.npang)
         logger.info(self,'Surface for nuc %d' % (self.inuc+1))
         logger.info(self,'Rmaxsurface %.6f' % self.rmaxsurf)
-        logger.info(self,'Npang points %d' % self.npang)
         logger.info(self,'Ntrial %d' % self.ntrial)
         logger.info(self,'Rprimer %.6f' % self.rprimer)
         logger.debug(self, 'Rpru : %s' % self.rpru) 
@@ -267,6 +284,18 @@ class BaderSurf(object):
             self.nzexp = f['basis/nzexp'].value
             self.nuexp = f['basis/nuexp'].value
             self.rcutte = f['basis/rcutte'].value
+        if (not self.leb):
+            self.npang = self.npphi*self.nptheta
+
+        #if (self.corr):
+        #    self.rdm1 = lib.chkfile.load(self.chkfile, 'rdm/rdm1') 
+        #    natocc, natorb = numpy.linalg.eigh(self.rdm1)
+        #    natorb = numpy.dot(self.mo_coeff, natorb)
+        #    self.mo_coeff = natorb
+        #    self.mo_occ = natocc
+        nocc = self.mo_occ[abs(self.mo_occ)>self.occdrop]
+        nocc = len(nocc)
+        self.nocc = nocc
 
         # 2) Setup basis info and grids
         if (self.ntrial%2 == 0): self.ntrial += 1
@@ -276,11 +305,18 @@ class BaderSurf(object):
             self.rpru[i] = self.rprimer*numpy.power(geofac,(i+1)-1)
         self.rsurf = numpy.zeros((self.npang,self.ntrial))
         self.nlimsurf = numpy.zeros((self.npang), dtype=numpy.int32)
-        self.grids = grids.lebgrid(self.npang)
         
         # Dump info
         if self.verbose > logger.NOTE:
             self.dump_input()
+
+        if (self.iqudt == 'legendre'):
+            self.iqudt = 1
+
+        if (self.leb):
+            self.grids = grids.lebgrid(self.npang)
+        else:
+            self.grids = grids.anggrid(self.iqudt,self.nptheta,self.npphi)
 
         # 3) Check rho nuclear atractors
         t = time.time()
@@ -309,43 +345,9 @@ class BaderSurf(object):
         sp_ = numpy.asarray(self.grids[:,3], order='C')
         angw_ = numpy.asarray(self.grids[:,4], order='C')
         # 4) Compute surface
-        if (self.csurf):
-            feval = 'csurf_driver'
-            drv = getattr(libcapi, feval)
-            drv(ctypes.c_int(self.nmo),  
-                ctypes.c_int(self.nprims),  
-                self.icen.ctypes.data_as(ctypes.c_void_p), 
-                self.ityp.ctypes.data_as(ctypes.c_void_p), 
-                self.oexp.ctypes.data_as(ctypes.c_void_p), 
-                self.ngroup.ctypes.data_as(ctypes.c_void_p), 
-                self.nzexp.ctypes.data_as(ctypes.c_void_p), 
-                self.nuexp.ctypes.data_as(ctypes.c_void_p), 
-                self.rcutte.ctypes.data_as(ctypes.c_void_p), 
-                self.mo_coeff.ctypes.data_as(ctypes.c_void_p), 
-                self.mo_occ.ctypes.data_as(ctypes.c_void_p), 
-                ctypes.c_int(self.natm),  
-                self.coords.ctypes.data_as(ctypes.c_void_p), 
-                ctypes.c_int(self.npang),  
-                ctypes.c_int((self.inuc)),  
-                self.xyzrho.ctypes.data_as(ctypes.c_void_p), 
-                ct_.ctypes.data_as(ctypes.c_void_p),
-                st_.ctypes.data_as(ctypes.c_void_p),
-                cp_.ctypes.data_as(ctypes.c_void_p),
-                sp_.ctypes.data_as(ctypes.c_void_p),
-                ctypes.c_int(backend),
-                ctypes.c_int(self.ntrial), 
-                ctypes.c_double(self.epsiscp), 
-                ctypes.c_double(self.epsroot), 
-                ctypes.c_double(self.rmaxsurf), 
-                ctypes.c_double(self.epsilon), 
-                self.rpru.ctypes.data_as(ctypes.c_void_p),
-                ctypes.c_double(self.step), 
-                ctypes.c_int(self.mstep),
-                self.nlimsurf.ctypes.data_as(ctypes.c_void_p),
-                self.rsurf.ctypes.data_as(ctypes.c_void_p))
-        else:
-            feval = 'surf_driver'
-            drv = getattr(libfapi, feval)
+        feval = 'surf_driver'
+        drv = getattr(libfapi, feval)
+        with misc.with_omp_threads(self.nthreads):
             drv(ctypes.c_int(self.nmo), 
                 ctypes.c_int(self.nprims),  
                 self.icen.ctypes.data_as(ctypes.c_void_p), 
@@ -362,12 +364,10 @@ class BaderSurf(object):
                 ctypes.c_int(self.npang),  
                 ctypes.c_int((self.inuc+1)),  
                 self.xyzrho.ctypes.data_as(ctypes.c_void_p), 
-                ctypes.c_char_p(self.chkfile),
                 ct_.ctypes.data_as(ctypes.c_void_p),
                 st_.ctypes.data_as(ctypes.c_void_p),
                 cp_.ctypes.data_as(ctypes.c_void_p),
                 sp_.ctypes.data_as(ctypes.c_void_p),
-                angw_.ctypes.data_as(ctypes.c_void_p),
                 ctypes.c_int(backend),
                 ctypes.c_int(self.ntrial), 
                 ctypes.c_double(self.epsiscp), 
@@ -421,7 +421,6 @@ if __name__ == '__main__':
     surf.verbose = 4
     surf.epsiscp = 0.220
     surf.mstep = 140
-    #surf.csurf = True
     surf.npang = 5810
     surf.inuc = 0
     surf.kernel()

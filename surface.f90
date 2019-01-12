@@ -1,7 +1,7 @@
 subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
                        nuexp, rcutte, mo_coeff, mo_occ, natm, coords, &
-                       npang, inuc, xyzrho, filename, ct, st, cp, sp, &
-                       angw, backend, ntrial, epsiscp, epsroot, rmaxsurf, &
+                       npang, inuc, xyzrho, ct, st, cp, sp, &
+                       backend, ntrial, epsiscp, epsroot, rmaxsurf, &
                        epsilon, rprimer, step, mstep, nlimsurf, rlimsurf) bind(c)
 
   use mod_prec, only: rp, ip
@@ -15,10 +15,10 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
                        coeff_, oexp_, occ_, icen_, ityp_, nzexp_, nuexp_, & 
                        deallocate_space_for_basis, ngroup_, mgrp, ngtoh, &
                        rcutte_
-  use mod_surface, only: init_surf, rlimsurf_, nlimsurf_, minter, epsilon_, &
-                      xnuc_, inuc_, xyzrho_, npang_, rmaxsurf_, surf, epsroot_, &
-                      allocate_space_for_surface, deallocate_space_for_surface, &
-                      epsiscp_, mstep_, ntrial_, steeper_, step_, rprimer_
+  use mod_surface, only: init_surf, minter, epsilon_, &
+                         xnuc_, inuc_, xyzrho_, npang_, rmaxsurf_, surf, epsroot_, &
+                         allocate_space_for_surface, deallocate_space_for_surface, &
+                         epsiscp_, mstep_, ntrial_, steeper_, step_, rprimer_
   implicit none
 
   integer(kind=ip), intent(in), value :: natm
@@ -39,12 +39,11 @@ subroutine surf_driver(nmo, nprims, icen, ityp, oexp, ngroup, nzexp, &
 
   integer(kind=ip), intent(in), value :: npang, inuc
   real(kind=rp), intent(in), dimension(3,natm) :: xyzrho
-  character(kind=c_char,len=1), intent(in) :: filename(*)
 
   integer(kind=ip), intent(in), value :: backend, ntrial, mstep
   real(kind=rp), intent(in), value :: epsiscp, epsilon, rmaxsurf
   real(kind=rp), intent(in), value :: step, epsroot, rprimer
-  real(kind=rp), intent(in), dimension(npang) :: ct, st, cp, sp, angw
+  real(kind=rp), intent(in), dimension(npang) :: ct, st, cp, sp
   real(kind=rp), intent(out) :: rlimsurf(ntrial,npang) 
   integer(kind=ip), intent(out) :: nlimsurf(npang) 
 

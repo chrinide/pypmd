@@ -325,10 +325,3 @@ if __name__ == '__main__':
     gradmod = numpy.linalg.norm(rho[-3:])
     print('Rho point = %s %s ' % (rho,gradmod))
 
-    a = [9.39832099e-23,0.00000000e+00,2.22228489e-01]
-    a = numpy.asarray(a)
-    a = numpy.reshape(a, (-1,3))
-    ao = dft.numint.eval_ao(mol, a, deriv=1)
-    rho = dft.numint.eval_rho2(mol, ao, mf_mo_coeff, mf_mo_occ, xctype='GGA')
-    gradmod = numpy.linalg.norm(rho[-3:])
-    print('Rho point = %s %s ' % (rho,gradmod))

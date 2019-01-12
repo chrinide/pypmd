@@ -12,35 +12,12 @@ import param
 import misc
 import chkfile
 import logger
+import evaluator
+import tools
 
 # For code compatiblity in python-2 and python-3
 if sys.version_info >= (3,):
     unicode = str
-
-
-def read_rdm1(file1, norb):
-    f2 = open(file1, 'r')
-    rdm1 = numpy.zeros((norb, norb))
-    for line in f2.readlines():
-        linesp = line.split()
-        ind1 = int(linesp[0])
-        ind2 = int(linesp[1])
-        ind1 = ind1 - 1
-        ind2 = ind2 - 1
-        rdm1[ind1, ind2] = float(linesp[2])
-
-    f2.close()
-    return rdm1
-
-def get_nat_orbs(self):    
-    rdm1 = read_rdm1(self.rdmfile, self.nmo)
-    natocc, natorb = numpy.linalg.eigh(-rdm1)
-    for i, k in enumerate(numpy.argmax(abs(natorb), axis=0)):
-        if natorb[k,i] < 0:
-            natorb[:,i] *= -1
-    natorb = numpy.dot(self.mo_coeff[:,:], natorb)
-    natocc = -natocc
-    return self
 
 
 def purge_prims(self):    
@@ -142,7 +119,6 @@ class Mole(object):
         self.wfnfile = datafile
         self.scratch = param.TMPDIR 
         self.cuttz = 1e-12
-        self.corr = False
         self.chkfile = datafile+'.h5'
         self.rdmfile = datafile+'.rdm1'
         self.nthreads = misc.num_threads()
@@ -187,12 +163,10 @@ class Mole(object):
         logger.info(self,'Number of threads %d' % self.nthreads)
         logger.info(self,'Verbose level %d' % self.verbose)
         logger.info(self,'Scratch dir %s' % self.scratch)
-        logger.info(self,'Correlated calculation %s' % self.corr)
+        logger.info(self,'Input chkfile data file %s' % self.chkfile)
+        logger.info(self,'Max_memory %d MB' % self.max_memory)
         logger.info(self,'Input wfn data file %s' % self.wfnfile)
         logger.info(self,'Output h5 data file %s' % self.chkfile)
-        if (self.corr):
-            logger.info(self,'1-RDM data file %s' % self.rdmfile)
-        logger.info(self,'Max_memory %d MB' % self.max_memory)
 
         logger.info(self,'* Molecular Info')
         logger.info(self,'Num atoms %d' % self.natm)
@@ -268,18 +242,22 @@ class Mole(object):
         # 3) Get cutdistances for each shell
         get_shells_eps(self)
 
-        # 4) In case for correlated build natural orbitals
-        if (self.corr): get_nat_orbs(self)
-
         # Dump info
         if self.verbose > logger.NOTE:
             self.dump_input()
+
+        # 5) Test
+        logger.info(self,'Testing orthogonality of orbitals')
+        s = evaluator.eval_overlap(self)
+        s = numpy.dot(s,self.mo_coeff)
+        s = numpy.dot(self.mo_coeff.T,s)
+        tools.dump_tri(self.stdout, s) 
+        logger.info(self,'')
 
         # 5) Write info to file
         logger.info(self,'Write HDF5 file')
 	mol_dic = {'natm':self.natm,
                    'symbols':self.symbols,
-                   'corr':self.corr,
                    'coords':self.coords,
                    'charges':self.charges,
                    'nelectrons':self.nelectrons}

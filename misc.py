@@ -72,17 +72,18 @@ def num_threads(n=None):
     >>> print(lib.num_threads())
     4
     '''
-    libcapi = load_library('libcapi')
+    import warnings
+    libfapi = load_library('libfapi')
     if n is not None:
-        libcapi.set_omp_threads.restype = ctypes.c_int
-        threads = libcapi.set_omp_threads(ctypes.c_int(int(n)))
+        libfapi.set_omp_threads.restype = ctypes.c_int
+        threads = libfapi.set_omp_threads(ctypes.c_int(int(n)))
         if threads == 0:
             warnings.warn('OpenMP is not available. '
                           'Setting omp_threads to %s has no effects.' % n)
         return threads
     else:
-        libcapi.get_omp_threads.restype = ctypes.c_int
-        return libcapi.get_omp_threads()
+        libfapi.get_omp_threads.restype = ctypes.c_int
+        return libfapi.get_omp_threads()
 
 class with_omp_threads(object):
     '''Using this macro to create a temporary context in which the number of

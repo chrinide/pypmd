@@ -11,20 +11,39 @@ module mod_slm
   implicit none
   private
 
-  integer(kind=ip), parameter :: mxfact = 100
-  integer(kind=ip), parameter :: mcomb = 12
+  integer(kind=ip), parameter, public :: mxfact = 100
+  real(kind=rp), parameter, public :: eps = 1d-7
 
   real(kind=rp), allocatable, dimension(:) :: rshnorm, sqrin
-  real(kind=rp), allocatable, dimension(:,:) :: deltam
-  integer(kind=ip), allocatable, dimension(:) :: il0, pil0
-  integer(kind=ip), allocatable, dimension(:,:) :: jlm, islm
+  real(kind=rp), allocatable, dimension(:,:), public :: deltam
+  integer(kind=ip), allocatable, dimension(:), public :: il0
+  integer(kind=ip), allocatable, dimension(:) :: pil0
+  integer(kind=ip), allocatable, dimension(:,:), public :: jlm
   
-  real(kind=rp) :: fact(0:mxfact)
-  real(kind=rp) :: comb(0:mcomb,0:mcomb)
+  real(kind=rp), public :: fact(0:mxfact)
 
-  public :: init_slm, eval_rsh, allocate_space_for_slm, deallocate_space_for_slm
+  public :: eval_rsh, rsh, init_slm, allocate_space_for_slm, deallocate_space_for_slm
 
 contains
+
+  subroutine eval_rsh (lmax, npang, ct, st, cp, sp, slm) bind(c)
+
+    implicit none
+    integer(kind=ip), intent(in), value :: lmax
+    integer(kind=ip), intent(in), value :: npang
+    real(kind=rp), intent(in), dimension(npang) :: ct, st, cp, sp
+    real(kind=rp), intent(out) :: slm(0:lmax*(lmax+2),npang)
+
+    integer(kind=ip) :: j
+
+    call allocate_space_for_slm (lmax)
+    call init_slm (lmax)
+    do j = 1,npang
+      call rsh (ct(j),st(j),cp(j),sp(j),slm(0,j),lmax)
+    end do
+    call deallocate_space_for_slm ()
+
+  end subroutine eval_rsh
 
   ! ct - cos(theta), st-sin(theta)
   ! cf - cos(phi),   sf-sin(phi)
@@ -34,15 +53,13 @@ contains
   ! slm(l*(l+1)+m) element
   ! The routine WILL NOT test if r is zero; if it is, it will return
   ! the same value given for \theta=0
-  subroutine eval_rsh (ct,st,cf,sf,slm,lmax)
+  subroutine rsh (ct,st,cf,sf,slm,lmax)
  
     implicit none
     real(kind=rp), intent(in) :: ct, st, cf, sf
     integer(kind=ip), intent(in) :: lmax
     real(kind=rp), intent(out) :: slm (0:lmax*(lmax+2))
  
-    real(kind=rp), parameter :: eps = 1d-7
-
     integer(kind=ip) :: i, ifac, il, im, l, l2, ll, m, m2, ipp
     real(kind=rp) :: a1, a2, cc, facsqrt, fifac, fifac1, ss, tmp
 
@@ -109,7 +126,7 @@ contains
         tmp = cc*cf - ss*sf
         ss = ss*cf + cc*sf
         cc = tmp
-        m2 = m+m
+        m2 = m + m
         ipp = il0(m-1)+m
         do l2 = m2,lmax+lmax,2
           ipp = ipp + l2
@@ -138,18 +155,11 @@ contains
     real(kind=rp), parameter :: twopi = 2.0*pi
 
     real(kind=rp) :: temp
-    integer(kind=ip) :: l, m, i, il, l1, l12, l2, l22, lmax, ls, j, ij
+    integer(kind=ip) :: l, m, i, il, l1, l12, l2, l22, lmax, ls
 
     fact(0) = 1.0
     do i = 1,mxfact
       fact(i) = fact(i-1)*real(i,rp)
-    end do
-    do i = 0,mcomb
-      do j = 0,i/2
-        ij = i - j
-        comb(i,j) = fact(i)/fact(j)/fact(ij)
-        if (j.ne.ij) comb(i,ij) = comb(i,j)
-      end do
     end do
 
     l = 0
@@ -176,14 +186,14 @@ contains
       pil0(l) = pil0(l-1) + l + l - 1
       rshnorm(il) = 1.0
       do m = 1,l
-        rshnorm(il+m) = rshnorm(il) * sqrt(2.0)
+        rshnorm(il+m) = rshnorm(il)*sqrt(2.0)
         rshnorm(il-m) = rshnorm(il+m)
       end do
     end do
 
     ! Compute square root of integer from 0 to (2*lmax+1).
     do i = 0,2*lmax+1
-      sqrin(i) = sqrt(dble(i))
+      sqrin(i) = sqrt(real(i,rp))
     end do
 
     ! Compute deltam
@@ -203,36 +213,30 @@ contains
   subroutine allocate_space_for_slm (maxl)
   integer(kind=ip), intent(in) :: maxl
   integer(kind=ip) :: maxl2
-  integer :: ier
+  integer(kind=ip) :: ier
   maxl2=maxl+maxl
   allocate (rshnorm(0:maxl2*(maxl2+2)),stat=ier) 
+  if (ier.ne.0) stop "cannot alloc memory"
   allocate (sqrin(0:2*maxl2+1),stat=ier) 
+  if (ier.ne.0) stop "cannot alloc memory"
   allocate (deltam(0:maxl,0:maxl),stat=ier) 
+  if (ier.ne.0) stop "cannot alloc memory"
   allocate (il0(0:maxl2),stat=ier) 
+  if (ier.ne.0) stop "cannot alloc memory"
   allocate (pil0(0:maxl2),stat=ier)
+  if (ier.ne.0) stop "cannot alloc memory"
   allocate (jlm(0:maxl*(maxl+2),2),stat=ier) 
-  allocate (islm(0:maxl*(maxl+2),0:maxl*(maxl+2)),stat=ier) 
+  if (ier.ne.0) stop "cannot alloc memory"
   end subroutine allocate_space_for_slm
 
   subroutine deallocate_space_for_slm
-  integer :: ier
+  integer(kind=ip) :: ier
   deallocate (rshnorm,stat=ier) 
   deallocate (sqrin,stat=ier) 
   deallocate (deltam,stat=ier) 
   deallocate (il0,stat=ier) 
   deallocate (pil0,stat=ier)
   deallocate (jlm,stat=ier) 
-  deallocate (islm,stat=ier) 
   end subroutine deallocate_space_for_slm
 
 end module mod_slm
-
-!allocate (slm(0:lmax*(lmax+2),npang),stat=ier)
-!call initslm (lmax) !for bicentric
-!do j = 1,npang
-!  cost = ct(j)
-!  sint = st(j)
-!  cosp = cp(j)
-!  sinp = sp(j)
-!  call rsh (cost,sint,cosp,sinp,slm(0,j),lmax)
-!end do
