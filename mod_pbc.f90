@@ -5,10 +5,9 @@ module mod_pbc
   private
 
   real(kind=rp), dimension(3,3), public :: lattice
-  integer(kind=ip), public :: nkpoints
+  integer(kind=ip), parameter, public :: nkpoints = 1
+  real(kind=rp), dimension(3), parameter, public :: kpoints = 0.0
   integer(kind=ip), public :: ntvectors
-  real(kind=rp), allocatable, dimension(:,:), public :: kpoints
-  real(kind=rp), allocatable, dimension(:), public :: kweights
   real(kind=rp), allocatable, dimension(:,:), public :: tvectors
 
 end module mod_pbc
