@@ -32,9 +32,6 @@ if sys.version_info >= (3,):
     unicode = str
 
 libfapi = misc.load_library('libfapi')
-libcapi = misc.load_library('libcapi')
-
-EPS = 1e-7
 
 # ~= (L+1)**2/3
 LEBEDEV_ORDER = {
@@ -261,6 +258,13 @@ def original_becke(g):
     g = (3.0 - g**2) * g*0.5
     return g
 
+def tfvc(g):
+    g = (3.0 - g**2) * g*0.5
+    g = (3.0 - g**2) * g*0.5
+    g = (3.0 - g**2) * g*0.5
+    g = (3.0 - g**2) * g*0.5
+    return g
+
 # Gauss-Chebyshev of the first kind,  and the transformed interval [0,\infty)
 def becke(n, charge, *args, **kwargs):
     '''Becke, JCP, 88, 2547 (1988)'''
@@ -357,6 +361,16 @@ def becke_atomic_radii_adjust(self, atomic_radii):
         return g1
     return fadjust
 
+def tfvc_atomic_radii_adjust(self, atomic_radii):
+    charges = self.charges
+    rad = atomic_radii[charges] + 1e-200
+    xab = rad.reshape(-1,1) * (1.0/rad)
+    def fadjust(i, j, g):
+        g1 = 1.0+g-xab[i,j]*(1.0-g)
+        g1 /= 1.0+g+xab[i,j]*(1.0-g)
+        return g1
+    return fadjust
+
 def treutler_atomic_radii_adjust(self, atomic_radii):
     '''Treutler atomic radii adjust function: JCP, 102, 346'''
 # JCP, 102, 346
@@ -413,35 +427,6 @@ def _default_ang(nuc, level=3):
     period = (nuc > tab).sum()
     return LEBEDEV_ORDER[order[level,period]]
 
-def lebgrid(npang):
-
-    if npang not in LEBEDEV_NGRID:
-        raise ValueError('Lebgrid unsupported angular grid %d' % npang)
-    else:
-        ct = numpy.zeros((npang), order='F')
-        st = numpy.zeros((npang), order='F') 
-        cp = numpy.zeros((npang), order='F') 
-        sp = numpy.zeros((npang), order='F') 
-        aw = numpy.zeros((npang), order='F') 
-        agrids = numpy.zeros((npang,5))
-        libfapi.lebgrid(ct.ctypes.data_as(ctypes.c_void_p), 
-                        st.ctypes.data_as(ctypes.c_void_p), 
-                        cp.ctypes.data_as(ctypes.c_void_p), 
-                        sp.ctypes.data_as(ctypes.c_void_p), 
-                        aw.ctypes.data_as(ctypes.c_void_p),  
-                        ctypes.c_int(npang)) 
-        agrids[:,0] = ct
-        agrids[:,1] = st
-        agrids[:,2] = cp
-        agrids[:,3] = sp
-        agrids[:,4] = aw
-
-    return agrids
-
-def prange(start, end, step):
-    for i in range(start, end, step):
-        yield i, min(i+step, end)
-
 def gen_atomic_grids(self, atom_grid={}, radi_method=gauss_chebyshev, level=3, 
                      prune=nwchem_prune, **kwargs):
     '''Generate number of radial grids and angular grids for the given molecule.
@@ -488,10 +473,21 @@ def gen_atomic_grids(self, atom_grid={}, radi_method=gauss_chebyshev, level=3,
             vol = []
             for n in sorted(set(angs)):
                 grid = numpy.empty((n,4))
-                libcapi.MakeAngularGrid(grid.ctypes.data_as(ctypes.c_void_p),
-                                        ctypes.c_int(n))
+                x = numpy.empty((n))
+                y = numpy.empty((n))
+                z = numpy.empty((n))
+                w = numpy.empty((n))
+                libfapi.agrid(x.ctypes.data_as(ctypes.c_void_p),
+                              y.ctypes.data_as(ctypes.c_void_p),
+                              z.ctypes.data_as(ctypes.c_void_p),
+                              w.ctypes.data_as(ctypes.c_void_p),
+                              ctypes.c_int(n))
+                grid[:,0] = x
+                grid[:,1] = y
+                grid[:,2] = z
+                grid[:,3] = w
                 idx = numpy.where(angs==n)[0]
-                for i0, i1 in prange(0, len(idx), 12):  # 12 radi-grids as a group
+                for i0, i1 in misc.prange(0, len(idx), 12):  # 12 radi-grids as a group
                     coords.append(numpy.einsum('i,jk->jik',rad[idx[i0:i1]],
                                                grid[:,:3]).reshape(-1,3))
                     vol.append(numpy.einsum('i,j->ji', rad_weight[idx[i0:i1]],
@@ -550,8 +546,23 @@ def gen_partition(self, atom_grids_tab,
         weights = vol * pbecke[ia] * (1.0/pbecke.sum(axis=0))
         coords_all.append(coords)
         weights_all.append(weights)
-    return numpy.vstack(coords_all), numpy.hstack(weights_all)
+    if (not self.byatom):
+        return numpy.vstack(coords_all), numpy.hstack(weights_all)
+    else:
+        return coords_all, weights_all
 
+NELEC_ERROR_TOL = 0.02
+def prune_small_rho_grids_(self, grids):
+    rho = evaluator.eval_rhoo(self, grids.coords)
+    n = numpy.dot(rho, grids.weights)
+    if abs(n-self.nelectron) < NELEC_ERROR_TOL*n:
+        rho *= grids.weights
+        idx = abs(rho) > self.small_rho_cutoff / grids.weights.size
+        logger.debug(self, 'Drop grids %d', grids.weights.size - numpy.count_nonzero(idx))
+        grids.coords  = numpy.asarray(grids.coords [idx], order='C')
+        grids.weights = numpy.asarray(grids.weights[idx], order='C')
+        #grids.non0tab = grids.make_mask(mol, grids.coords)
+    return grids
 
 class Grids(object):
     '''DFT mesh grids
@@ -610,26 +621,29 @@ class Grids(object):
         self.max_memory = param.MAX_MEMORY
         self.chkfile = datafile
         self.scratch = param.TMPDIR 
+        self.nthreads = misc.num_threads()
+        self.corr = False
+        self.byatom = False
         self.level = 3
         self.atom_grid = {}
         self.atomic_radii = BRAGG
         self.radii_adjust = treutler_atomic_radii_adjust
-        self.radi_method =  treutler
+        self.radi_method = treutler
         self.becke_scheme = original_becke
         self.prune = nwchem_prune 
 ##################################################
 # don't modify the following attributes, they are not input options
+        self.natm = None
         self.xyz = None
         self.charges = None
         self.symbols = None
-        self.natm = None
         self.coords  = None
         self.weights = None
         self._keys = set(self.__dict__.keys())
 
     def __setattr__(self, key, val):
         if key in ('atom_grid', 'atomic_radii', 'radii_adjust', 'radi_method',
-                   'becke_scheme', 'prune', 'level'):
+                   'becke_scheme', 'prune', 'level', 'byatom'):
             self.coords = None
             self.weights = None
         super(Grids, self).__setattr__(key, val)
@@ -645,9 +659,12 @@ class Grids(object):
         logger.info(self,'Date %s' % time.ctime())
         logger.info(self,'Python %s' % sys.version)
         logger.info(self,'Numpy %s' % numpy.__version__)
+        logger.info(self,'Number of threads %d' % self.nthreads)
         logger.info(self,'Verbose level %d' % self.verbose)
         logger.info(self,'Scratch dir %s' % self.scratch)
         logger.info(self,'Input h5 data file %s' % self.chkfile)
+        logger.info(self,'Max_memory %d MB' % self.max_memory)
+        logger.info(self,'Correlated ? %s' % self.corr)
 
         logger.info(self,'* Molecular Info')
         logger.info(self,'Num atoms %d' % self.natm)
@@ -659,14 +676,15 @@ class Grids(object):
         logger.info(self,'* Grid Info')
         logger.info(self,'radial grids: %s', self.radi_method)
         logger.info(self,'becke partition: %s', self.becke_scheme)
-        logger.info(self,'pruning grids: %s', self.prune)
-        logger.info(self,'grids dens level: %d', self.level)
         if self.radii_adjust is not None:
             logger.info(self,'atomic radii adjust function: %s',
                         self.radii_adjust)
             logger.debug(self,'atomic_radii : %s', self.atomic_radii)
+        logger.info(self,'pruning grids: %s', self.prune)
         if self.atom_grid:
             logger.info(self,'User specified grid scheme %s', str(self.atom_grid))
+        else:
+            logger.info(self,'Grids dens level: %d', self.level)
         logger.info(self,'')
 
         return self
@@ -693,18 +711,21 @@ class Grids(object):
                                                self.radi_method,
                                                self.level, 
                                                self.prune, **kwargs)
-        self.coords, self.weights = \
-                gen_partition(self,atom_grids_tab,
-                                   self.radii_adjust, self.atomic_radii,
-                                   self.becke_scheme)
+
+        self.coords, self.weights = gen_partition(self,atom_grids_tab,
+                                                       self.radii_adjust, 
+                                                       self.atomic_radii,
+                                                       self.becke_scheme)
+
         # 4) Save
         logger.info(self,'Finish with grids')
         logger.info(self,'Tot grids %d', len(self.weights))
-        logger.info(self,'Write HDF5 grid file')
-        grid_dic = {'coords':self.coords,
-                    'weights':self.weights}
-        chkfile.save(self.chkfile, 'becke', grid_dic)
-        logger.info(self,'Grid saved')
+        if (not self.byatom):
+            logger.info(self,'Write HDF5 grid file')
+            grid_dic = {'coords':self.coords,
+                        'weights':self.weights}
+            chkfile.save(self.chkfile, 'becke', grid_dic)
+            logger.info(self,'Grid saved')
         logger.timer(self,'Becke grid build', t0)
         logger.info(self,'')
 
@@ -712,130 +733,14 @@ class Grids(object):
 
     kernel = build
 
-def legendre(n):
-
-    x = numpy.zeros(n)
-    w = numpy.zeros(n)
-
-    e1 = n*(n+1)
-    m = ((n+1)//2)
-    for i in range(1,m+1):
-        mp1mi = m+1-i
-        t = float(4*i-1)*numpy.pi/float(4*n+2)
-        x0 = numpy.cos(t)*(1.0-(1.0-1.0/float(n))/float(8*n*n))
-        pkm1 = 1.0
-        pk = x0
-        for k in range(2,n+1):
-            pkp1 = 2.0*x0*pk-pkm1-(x0*pk-pkm1)/float(k)
-            pkm1 = pk
-            pk = pkp1
-        d1 = float(n)*(pkm1-x0*pk)
-        dpn = d1/(1.0-x0*x0)
-        d2pn = (2.0*x0*dpn-e1*pk)/(1.0-x0*x0)
-        d3pn = (4.0*x0*d2pn+(2.0-e1)*dpn)/(1.0-x0*x0)
-        d4pn = (6.0*x0*d3pn+(6.0-e1)*d2pn)/(1.0-x0*x0)
-        u = pk/dpn
-        v = d2pn/dpn
-        h = -u*(1.0+0.5*u*(v+u*(v*v-d3pn/(3.0*dpn))))
-        p = pk+h*(dpn+0.5*h*(d2pn+h/3.0*(d3pn+0.25*h*d4pn)))
-        dp = dpn+h*(d2pn+0.5*h*(d3pn+h*d4pn/3.0))
-        h = h-p/dp
-        xtemp = x0+h
-        x[mp1mi-1] = xtemp
-        fx = d1-h*e1*(pk+0.5*h*(dpn+h/3.0*(d2pn+0.25*h*(d3pn+0.2*h*d4pn))))
-        w[mp1mi-1] = 2.0*(1.0-xtemp*xtemp)/fx/fx
-
-    if ((n%2) == 1):
-        x[0] = 0.0
-    nmove = ((n+1)//2)
-    ncopy = n-nmove
-    for i in range(1,nmove+1):
-        iback = n+1-i
-        x[iback-1] = x[iback-ncopy-1]
-        w[iback-1] = w[iback-ncopy-1]
-    for i in range(1,n-nmove+1):
-        x[i-1] = -x[n-i]
-        w[i-1] = w[n-i]
-
-    return x, w
-
-def rquad(nr,r0,rfar,rad,iqudr,mapr):
-
-    rmesh = numpy.zeros(nr)
-    dvol = numpy.zeros(nr)
-    dvoln = numpy.zeros(nr)
- 
-    if (rfar-r0 <= 0.001):
-        raise RuntimeError('rmax < rmin ??') 
-
-    # Determine eta parameter in case of radial mapping
-    rfarc = rfar - r0
-    if (mapr == 1):
-        eta = 2.0*rad/rfarc
-    elif (mapr == 2):
-        eta = 2.0*numpy.exp(-rfarc/rad)/(1.0-numpy.exp(-rfarc/rad))
-    elif (mapr == 0):
-        eta = 0.0
-    else:    
-        raise NotImplementedError('Only becke or exp mapping available') 
-
-    if (iqudr == 1):
-        xr, rwei = legendre(nr)
-    else:    
-        raise NotImplementedError('Only legendre quadrature available') 
-
-    # Determine abscissas and volume elements.
-    # for finite range (a..b) the transformation is y = (b-a)*x/2+(b+a)/2
-    # x = (b-a)*0.5*x+(b+a)*0.5
-    # w = w*(b-a)*0.5
-    if (mapr == 0):
-        for i in range(nr):
-            aa = (rfar-r0)/2.0
-            bb = (rfar+r0)/2.0
-            u = xr[i]
-            r = aa*u+bb
-            rmesh[i] = r
-            dvoln[i] = r*aa
-            dvol[i] = dvoln[i]*r
-    elif (mapr == 1):
-        for i in range(nr):
-            u = xr[i]
-            den = (1.0-u+eta)
-            r = rad*(1.0+u)/den + r0
-            rmesh[i] = r
-            if (numpy.abs(den) >= EPS):
-                dvoln[i] = rad*(2.0+eta)/den/den*r
-            else:
-                dvoln[i] = 0.0
-            dvol[i] = dvoln[i]*r
-    elif (mapr == 2):
-        for i in range(nr):
-            u = xr[i]
-            den = (1.0-u+eta)
-            r = rad*numpy.log((2.0+eta)/den) + r0
-            rmesh[i] = r
-            if (numpy.abs(den) >= EPS):
-                dvoln[i] = r*rad/den
-            else:
-                dvoln[i] = 0.0
-            dvol[i] = dvoln[i]*r
-
-    return rmesh, rwei, dvol, dvoln
-
-
 if __name__ == '__main__':
-
-    npang = 5810
-    agrid = lebgrid(npang)
-    with open('agrid.txt', 'w') as f2:
-        f2.write('# Point 1 2 3 4 weight\n')
-        for i in range(npang):
-            f2.write('%d   %.6f  %.6f  %.6f  %.6f  %.6f\n' % \
-            ((i+1), agrid[i,0], agrid[i,1], agrid[i,2], agrid[i,3], agrid[i,4]))
 
     name = 'h2o.wfn.h5'
     g = Grids(name)
     g.verbose = 4
+    g.radii_adjust = tfvc_atomic_radii_adjust
+    g.radi_method =  gauss_chebyshev
+    g.becke_scheme = tfvc
     g.prune = None
     g.build()
     with open('bgrid.txt', 'w') as f2:
@@ -845,15 +750,16 @@ if __name__ == '__main__':
             f2.write('%d   %.6f  %.6f  %.6f  %.6f\n' % \
             ((i+1), g.coords[i,0], g.coords[i,1], g.coords[i,2], g.weights[i]))
 
-    nr = 10
-    x, w = legendre(nr) 
-    print('Legendre points %s' % x)
-    print('Legendre weigths %s' % w)
+    from pyscf import lib, dft
+    from pyscf.dft import numint
 
-    r0 = 0
-    rfar = 2
-    rad = 1.5
-    iqudr = 1
-    mapr = 1
-    rm, rw, dv, dvn = rquad(nr,r0,rfar,rad,iqudr,mapr)
+    chkname = 'h2o.chk'
+    mol = lib.chkfile.load_mol(chkname)
+    mf_mo_coeff = lib.chkfile.load(chkname, 'scf/mo_coeff')
+    mf_mo_occ = lib.chkfile.load(chkname, 'scf/mo_occ')
+    
+    ao = dft.numint.eval_ao(mol, g.coords, deriv=0)
+    rho = dft.numint.eval_rho2(mol, ao, mf_mo_coeff, mf_mo_occ, xctype='LDA')
+    rho = numpy.dot(rho, g.weights)
+    print rho
 

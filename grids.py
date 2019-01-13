@@ -9,6 +9,7 @@ import misc
 import param
 import logger
 import chkfile
+import evaluator
 
 # For code compatiblity in python-2 and python-3
 if sys.version_info >= (3,):
@@ -16,7 +17,6 @@ if sys.version_info >= (3,):
 
 libfapi = misc.load_library('libfapi')
 
-NELEC_ERROR_TOL = 0.02
 EPS = 1e-7
 HMINIMAL = numpy.finfo(numpy.float64).eps
 LEBEDEV_NGRID = numpy.asarray((
@@ -50,10 +50,6 @@ BRAGG = 1.0/param.BOHR * numpy.array((0,  # Ghost atom
         1.75, 1.75,
         1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75))
 
-
-def prange(start, end, step):
-    for i in range(start, end, step):
-        yield i, min(i+step, end)
 
 def legendre(n):
     x = numpy.zeros(n)
@@ -261,17 +257,6 @@ def rquad(nr,r0,rfar,rad,iqudr,mapr):
             dvol[i] = dvoln[i]*r
     return rmesh, rwei, dvol, dvoln
 
-#def prune_small_rho_grids(self, grids):
-#    rho = evaluator.eval_rho(self, grids.coords)
-#    n = numpy.dot(rho, grids.weights)
-#    if abs(n-self.nelectron) < NELEC_ERROR_TOL*n:
-#        rho *= grids.weights
-#        idx = abs(rho) > self.small_rho_cutoff/grids.weights.size
-#        logger.debug(self,'Drop grids %d',
-#                     grids.weights.size - numpy.count_nonzero(idx))
-#        grids.coords = numpy.asarray(grids.coords[idx], order='C')
-#        grids.weights = numpy.asarray(grids.weights[idx], order='C')
-#    return grids
 
 if __name__ == '__main__':
     nr = 10

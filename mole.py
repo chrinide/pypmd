@@ -13,7 +13,6 @@ import misc
 import chkfile
 import logger
 import evaluator
-import tools
 
 # For code compatiblity in python-2 and python-3
 if sys.version_info >= (3,):
@@ -251,7 +250,7 @@ class Mole(object):
         s = evaluator.eval_overlap(self)
         s = numpy.dot(s,self.mo_coeff)
         s = numpy.dot(self.mo_coeff.T,s)
-        tools.dump_tri(self.stdout, s) 
+        misc.dump_tri(self.stdout, s) 
         logger.info(self,'')
 
         # 5) Write info to file

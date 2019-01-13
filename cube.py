@@ -45,7 +45,7 @@ import numpy
 import tools
 import param
 import data
-import numint
+import evaluator
 import misc
 import logger
 
@@ -60,8 +60,8 @@ def density(self):
     ngrids = self.get_ngrids()
     blksize = min(8000, ngrids)
     rho = numpy.empty(ngrids)
-    for ip0, ip1 in prange(0, ngrids, blksize):
-        rho[ip0:ip1] = numint.eval_rho(self,coords[ip0:ip1])
+    for ip0, ip1 in misc.prange(0, ngrids, blksize):
+        rho[ip0:ip1] = evaluator.eval_rho(self,coords[ip0:ip1])
     rho = rho.reshape(self.nx,self.ny,self.nz)
     # Write out density to the .cube file
     outfile = self.chkfile+'.cube'
@@ -81,7 +81,9 @@ class Cube(object):
         self.nz = 80
         self.resolution = None
         self.margin = BOX_MARGIN
-        self.gpu = False
+        self.corr = False
+        self.occdrop = 1e-6
+        self.prop = 'rho'
 ##################################################
 # don't modify the following attributes, they are not input options
         self.natm = None
@@ -122,6 +124,7 @@ class Cube(object):
         logger.info(self,'Scratch dir %s' % self.scratch)
         logger.info(self,'Input h5 data file %s' % self.chkfile)
         logger.info(self,'Max_memory %d MB' % self.max_memory)
+        logger.info(self,'Correlated ? %s' % self.corr)
 
         logger.info(self,'* Molecular Info')
         logger.info(self,'Num atoms %d' % self.natm)
@@ -132,6 +135,8 @@ class Cube(object):
 
         logger.info(self,'* Basis Info')
         logger.info(self,'Number of Orbitals %d' % self.nmo)
+        logger.info(self,'Orbital EPS occ criterion %e' % self.occdrop)
+        logger.info(self,'Number of occupied molecular orbitals %d' % self.nocc)
         logger.info(self,'Number of primitives %d' % self.nprims)
         logger.debug(self,'Number of shells per center %s' % self.ngroup)
         for ic in range(self.natm):
@@ -186,6 +191,16 @@ class Cube(object):
             self.nuexp = f['basis/nuexp'].value
             self.rcutte = f['basis/rcutte'].value
 
+        #if (self.corr):
+        #    self.rdm1 = lib.chkfile.load(self.chkfile, 'rdm/rdm1') 
+        #    natocc, natorb = numpy.linalg.eigh(self.rdm1)
+        #    natorb = numpy.dot(self.mo_coeff, natorb)
+        #    self.mo_coeff = natorb
+        #    self.mo_occ = natocc
+        nocc = self.mo_occ[abs(self.mo_occ)>self.occdrop]
+        nocc = len(nocc)
+        self.nocc = nocc
+
         # 2) Build cube data
         coords = self.coords
         margin = self.margin
@@ -210,7 +225,11 @@ class Cube(object):
         if self.verbose > logger.NOTE:
             self.dump_input()
 
-        density(self)
+        with misc.with_omp_threads(self.nthreads):
+            if (self.prop == 'rho'):
+                density(self)
+            else:
+                raise NotImplementedError ('Only rho available')
 
         logger.timer(self,'Cube done', t0)
         logger.info(self,'')
@@ -223,7 +242,7 @@ class Cube(object):
         """  Result: set of coordinates to compute a field which is to be stored
         in the file.
         """
-        coords = cartesian_prod([self.xs,self.ys,self.zs])
+        coords = misc.cartesian_prod([self.xs,self.ys,self.zs])
         coords = numpy.asarray(coords, order='C') - (-self.boxorig)
         return coords
 
@@ -256,11 +275,9 @@ class Cube(object):
 
             for ix in range(self.nx):
                 for iy in range(self.ny):
-                    for iz0, iz1 in prange(0, self.nz, 6):
+                    for iz0, iz1 in misc.prange(0, self.nz, 6):
                         fmt = '%13.5E' * (iz1-iz0) + '\n'
                         f.write(fmt % tuple(field[ix,iy,iz0:iz1].tolist()))
-
-#del(RESOLUTION, BOX_MARGIN)
 
 if __name__ == '__main__':
     name = 'h2o.wfn.h5'

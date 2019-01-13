@@ -12,9 +12,10 @@ import logger
 import param
 import data
 import chkfile
-import grids
+import becke
+from becke import tfvc, tfvc_atomic_radii_adjust   
 import misc
-import numint
+import evaluator
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -24,7 +25,7 @@ libfapi = misc.load_library('libfapi')
 if sys.version_info >= (3,):
     unicode = str
 
-class Becke(object):
+class Tfvc(object):
 
     def __init__(self, datafile):
         self.verbose = logger.NOTE
@@ -34,8 +35,8 @@ class Becke(object):
         self.scratch = param.TMPDIR 
         self.small_rho_cutoff = 1e-7
         self.nthreads = misc.num_threads()
-        self.grids = grids.Grids(self.chkfile)
-        self.gpu = False
+        self.grids = becke.Grids(self.chkfile)
+        self.corr = False
 ##################################################
 # don't modify the following attributes, they are not input options
         self.natm = None
@@ -115,7 +116,11 @@ class Becke(object):
         self.grids.stdout = self.stdout
         self.grids.max_memory = self.max_memory
         self.grids.scratch = self.scratch
-        self.grids.build()
+        self.grids.byatom = True
+        self.grids.radii_adjust = tfvc_atomic_radii_adjust  
+        #self.grids.radi_method =  becke.gauss_chebyshev
+        self.grids.becke_scheme = tfvc
+        self.grids.build()     
 
         # 2) Read info
         with h5py.File(self.chkfile) as f:
@@ -139,42 +144,11 @@ class Becke(object):
         if self.verbose > logger.NOTE:
             self.dump_input()
 
-        # 3) Qualitie of grid
-        rho = numint.eval_rho(self,self.grids.coords)
-        rhoval = numpy.einsum('i,i->',rho,self.grids.weights)
-        logger.info(self,'Integral of rho %.6f' % rhoval)
-
-        # 4) Promolecular density and weights
-        logger.info(self,'Getting atomic data from tabulated densities')
-        npoints = len(self.grids.weights)
-        output = numpy.zeros(npoints)
-        promol = numpy.zeros(npoints)
-        ftmp = misc.H5TmpFile()
-        rhoat = 0.0
+        # 3) Integral for each atom
         for i in range(self.natm):
-            libfapi.atomic(ctypes.c_int(npoints),  
-                           ctypes.c_int(self.charges[i]),  
-                           self.coords[i].ctypes.data_as(ctypes.c_void_p), 
-                           self.grids.coords.ctypes.data_as(ctypes.c_void_p), 
-                           output.ctypes.data_as(ctypes.c_void_p))
-            h5dat = ftmp.create_dataset('atom'+str(i), (npoints,), 'f8')
-            h5dat[:] = output[:]
-            rhoa = numpy.einsum('i,i->',output,self.grids.weights)
-            rhoat += rhoa
-            promol += output
-            logger.info(self,'Integral of rho for atom %d %.6f' % (i, rhoa))
-        logger.info(self,'Integral of rho promolecular %.6f' % rhoat)
-        for i in range(self.natm):
-            h5dat = ftmp.create_dataset('weight'+str(i), (npoints,), 'f8')
-            h5dat[:] = ftmp['atom'+str(i)][:]/(promol+param.HMINIMAL)
-
-        # 5) Atomic partition
-        atomq = numpy.zeros(self.natm)
-        hirshfeld = numpy.zeros(npoints)
-        for i in range(self.natm):
-            hirshfeld[:] = ftmp['weight'+str(i)]
-            atomq[i] = numpy.einsum('i,i->',rho,self.grids.weights*hirshfeld)
-            logger.info(self,'Charge of atom %d %.6f' % (i,atomq[i]))
+            rho = evaluator.eval_rho(self,self.grids.coords[i])
+            rhoval = numpy.dot(rho,self.grids.weights[i])
+            logger.info(self,'Integral of rho %d %.6f' % (i,rhoval))
 
         logger.timer(self,'Becke integration done', t0)
         logger.info(self,'')
@@ -185,23 +159,10 @@ class Becke(object):
 
 if __name__ == '__main__':
     name = 'h2o.wfn.h5'
-    becke = Becke(name)
+    becke = Tfvc(name)
     becke.verbose = 4
     becke.grids.level = 3
-    becke.grids.atom_grid = {'H': (521,5810), 'O': (521,5810)}
+    #becke.grids.atom_grid = {'H': (521,5810), 'O': (521,5810)}
     becke.grids.prune = 0
     becke.kernel()
-
-    from pyscf import lib, dft
-    from pyscf.dft import numint
-
-    chkname = 'h2o.chk'
-    mol = lib.chkfile.load_mol(chkname)
-    mf_mo_coeff = lib.chkfile.load(chkname, 'scf/mo_coeff')
-    mf_mo_occ = lib.chkfile.load(chkname, 'scf/mo_occ')
-    coords = numpy.reshape(becke.grids.coords, (-1,3))
-    ao = dft.numint.eval_ao(mol, coords, deriv=0)
-    rho = dft.numint.eval_rho2(mol, ao, mf_mo_coeff, mf_mo_occ, xctype='LDA')
-    rho = numpy.einsum('i,i->',rho,becke.grids.weights)
-    print rho
 

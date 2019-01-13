@@ -31,6 +31,9 @@ import tempfile
 import param
 
 ASYNC_IO = True
+BASE = 0
+OUTPUT_COLS = 5
+OUTPUT_DIGITS = 5
 c_double_p = ctypes.POINTER(ctypes.c_double)
 c_int_p = ctypes.POINTER(ctypes.c_int)
 c_null_ptr = ctypes.POINTER(ctypes.c_void_p)
@@ -39,6 +42,48 @@ if h5py.version.version[:4] == '2.2.':
     sys.stderr.write('h5py-%s is found in your environment. '
                      'h5py-%s has bug in threading mode.\n'
                      'Async-IO is disabled.\n' % ((h5py.version.version,)*2))
+
+
+def dump_tri(stdout, c, ncol=OUTPUT_COLS, digits=OUTPUT_DIGITS, start=BASE):
+    ''' Format print for the lower triangular part of an array
+
+    Args:
+        stdout : file object
+            eg sys.stdout, or stdout = open('/path/to/file') or
+            mol.stdout if mol is an object initialized from :class:`gto.Mole`
+        c : numpy.ndarray
+            coefficients
+
+    Kwargs:
+        ncol : int
+            Number of columns in the format output (default 5)
+        digits : int
+            Number of digits of precision for floating point output (default 5)
+        start : int
+            The number to start to count the index (default 0)
+
+    Examples:
+
+        >>> import sys, numpy
+        >>> dm = numpy.eye(3)
+        >>> dump_tri(sys.stdout, dm)
+                #0        #1        #2   
+        0       1.00000
+        1       0.00000   1.00000
+        2       0.00000   0.00000   1.00000
+    '''
+    nc = c.shape[1]
+    for ic in range(0, nc, ncol):
+        dc = c[:,ic:ic+ncol]
+        m = dc.shape[1]
+        fmt = (' %%%d.%df'%(digits+4,digits))*m + '\n'
+        stdout.write(((' '*(digits+3))+'%s\n') % \
+                     (' '*(digits)).join(['#%-4d'%i for i in range(start+ic,start+ic+m)]))
+        for k, v in enumerate(dc[ic:ic+m]):
+            fmt = (' %%%d.%df'%(digits+4,digits))*(k+1) + '\n'
+            stdout.write(('%-5d' % (ic+k+start)) + (fmt % tuple(v[:k+1])))
+        for k, v in enumerate(dc[ic+m:]):
+            stdout.write(('%-5d' % (ic+m+k+start)) + (fmt % tuple(v)))
 
 def load_library(libname):
 # numpy 1.6 has bug in ctypeslib.load_library, see numpy/distutils/misc_util.py

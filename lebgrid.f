@@ -1,4 +1,83 @@
 c
+      subroutine agrid(x,y,z,w,npoints) bind(c)
+c
+c...............................................................
+c
+      use mod_prec, only: rp, ip
+c
+      integer(kind=ip), value, intent(in) :: npoints
+      real(kind=rp), intent(out) :: x(npoints)
+      real(kind=rp), intent(out) :: y(npoints)
+      real(kind=rp), intent(out) :: z(npoints)
+      real(kind=rp), intent(out) :: w(npoints)
+c
+      if     (npoints.eq.   6) then
+       call LD0006(X,Y,Z,W,N)
+      elseif (npoints.eq.  14) then
+       call LD0014(X,Y,Z,W,N)
+      elseif (npoints.eq.  26) then
+       call LD0026(X,Y,Z,W,N)
+      elseif (npoints.eq.  38) then
+       call LD0038(X,Y,Z,W,N)
+      elseif (npoints.eq.  50) then
+       call LD0050(X,Y,Z,W,N)
+      elseif (npoints.eq.  74) then
+       call LD0074(X,Y,Z,W,N)
+      elseif (npoints.eq.  86) then
+       call LD0086(X,Y,Z,W,N)
+      elseif (npoints.eq. 110) then
+       call LD0110(X,Y,Z,W,N)
+      elseif (npoints.eq. 146) then
+       call LD0146(X,Y,Z,W,N)
+      elseif (npoints.eq. 170) then
+       call LD0170(X,Y,Z,W,N)
+      elseif (npoints.eq. 194) then
+       call LD0194(X,Y,Z,W,N)
+      elseif (npoints.eq. 230) then
+       call LD0230(X,Y,Z,W,N)
+      elseif (npoints.eq. 266) then
+       call LD0266(X,Y,Z,W,N)
+      elseif (npoints.eq. 302) then
+       call LD0302(X,Y,Z,W,N)
+      elseif (npoints.eq. 350) then
+       call LD0350(X,Y,Z,W,N)
+      elseif (npoints.eq. 434) then
+       call LD0434(X,Y,Z,W,N)
+      elseif (npoints.eq. 590) then
+       call LD0590(X,Y,Z,W,N)
+      elseif (npoints.eq. 770) then
+       call LD0770(X,Y,Z,W,N)
+      elseif (npoints.eq. 974) then
+       call LD0974(X,Y,Z,W,N)
+      elseif (npoints.eq.1202) then
+       call LD1202(X,Y,Z,W,N)
+      elseif (npoints.eq.1454) then
+       call LD1454(X,Y,Z,W,N)
+      elseif (npoints.eq.1730) then
+       call LD1730(X,Y,Z,W,N)
+      elseif (npoints.eq.2030) then
+       call LD2030(X,Y,Z,W,N)
+      elseif (npoints.eq.2354) then
+       call LD2354(X,Y,Z,W,N)
+      elseif (npoints.eq.2702) then
+       call LD2702(X,Y,Z,W,N)
+      elseif (npoints.eq.3074) then
+       call LD3074(X,Y,Z,W,N)
+      elseif (npoints.eq.3470) then
+       call LD3470(X,Y,Z,W,N)
+      elseif (npoints.eq.3890) then
+       call LD3890(X,Y,Z,W,N)
+      elseif (npoints.eq.4334) then
+       call LD4334(X,Y,Z,W,N)
+      elseif (npoints.eq.4802) then
+       call LD4802(X,Y,Z,W,N)
+      elseif (npoints.eq.5294) then
+       call LD5294(X,Y,Z,W,N)
+      elseif (npoints.eq.5810) then
+       call LD5810(X,Y,Z,W,N)
+      endif
+      end subroutine  
+c
 c-----lebgrid-----------------------------------------------------------
 c
 c     This routine computes the grid points and weights of an angular
