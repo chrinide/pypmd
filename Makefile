@@ -13,7 +13,7 @@ all: libfapi.so
 FOBJECTS = mod_prec.o mod_io.o mod_memory.o mod_param.o mod_futils.o \
 mod_math.o mod_mole.o mod_basis.o mod_fields.o mod_surface.o mod_slm.o \
 mod_gaunt.o mod_gto.o mod_atomic.o mod_eval.o mod_rquad.o mod_pbc.o \
-surface.o lebgrid.o
+mod_ecp.o surface.o lebgrid.o
 
 COBJECTS = misc.o
 
